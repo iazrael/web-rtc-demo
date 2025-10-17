@@ -2,7 +2,7 @@
 
 # compiled output
 /.vscode
-/dist
+dist
 /tmp
 /out-tsc
 
