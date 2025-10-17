@@ -5,79 +5,144 @@ import './assets/bootstrap.min.css';
 import { ZegoExpressEngine } from 'zego-express-engine-webrtc';
 import { getBrowser } from './assets/utils';
 
+// 类型定义
+interface BrowserVersions {
+  trident: boolean;
+  presto: boolean;
+  webKit: boolean;
+  gecko: boolean;
+  mobile: boolean;
+  ios: boolean;
+  android: boolean;
+  iPhone: boolean;
+  iPad: boolean;
+  webApp: boolean;
+  weixin: boolean;
+  qq: boolean;
+}
+
+interface BrowserInfo {
+  versions: BrowserVersions;
+  language: string;
+}
+
+interface DeviceInfo {
+  deviceID: string;
+  deviceName: string;
+}
+
+interface EnumDevicesResult {
+  microphones: DeviceInfo[];
+  cameras: DeviceInfo[];
+}
+
+interface RoomStateUpdateEvent {
+  roomID: string;
+  state: string;
+  errorCode: number;
+  extendedData: any;
+}
+
+interface UserInfo {
+  userID: string;
+  userName?: string;
+}
+
+interface RoomLoginOptions {
+  userUpdate: boolean;
+}
+
+interface PublisherStateUpdateEvent {
+  streamID: string;
+  state: 'PUBLISHING' | 'PUBLISH_REQUESTING' | string;
+  errorCode: number;
+}
+
+interface PlayerStateUpdateEvent {
+  streamID: string;
+  state: 'PLAYING' | 'PLAY_REQUESTING' | string;
+  errorCode: number;
+}
+
+interface StreamInfo {
+  streamID: string;
+  userID?: string;
+  userName?: string;
+}
+
+interface SoundLevelInfo {
+  type: 'push' | 'pull';
+  streamID: string;
+  soundLevel: number;
+}
+
+interface DeviceErrorEvent {
+  errorCode: number;
+  deviceName: string;
+}
+
+interface VideoDeviceStateChangedEvent {
+  updateType: string;
+  device: DeviceInfo;
+}
+
+interface AudioDeviceStateChangedEvent {
+  updateType: string;
+  deviceType: string;
+  device: DeviceInfo;
+}
+
+// 全局变量
 new VConsole();
 const userName = 'sampleUser' + new Date().getTime();
 const tokenUrl = 'https://wsliveroom-alpha.zego.im:8282/token';
 let userID = 'sample' + new Date().getTime();
 let publishStreamId = 'webrtc' + new Date().getTime();
-let zg;
+let zg: ZegoExpressEngine;
 let appID = 1739272706; // 请从官网控制台获取对应的appID
 let server = 'wss://webliveroom-test.zego.im/ws'; // 请从官网控制台获取对应的server地址，否则可能登录失败
 
 let cgiToken = '';
 //const appSign = '';
-let previewVideo;
-let useLocalStreamList = [];
+let previewVideo: HTMLVideoElement;
+let useLocalStreamList: StreamInfo[] = [];
 let isPreviewed = false;
 let supportScreenSharing = false;
 let loginRoom = false;
 
-let localStream;
-let publishType;
+let localStream: MediaStream | null = null;
+let publishType: string | null = null;
 
-let l3;
-let roomList = [];
-
-
-// 测试用代码 end
-// Test code end
-
-let browser = {
-    versions:function(){
-        var u = navigator.userAgent, app = navigator.appVersion;
-        return {
-            trident: u.indexOf('Trident') > -1, //IE内核
-            presto: u.indexOf('Presto') > -1, //opera内核
-            webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
-            gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1,//火狐内核
-            mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
-            ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
-            android: u.indexOf('Android') > -1 || u.indexOf('Adr') > -1, //android终端
-            iPhone: u.indexOf('iPhone') > -1 , //是否为iPhone或者QQHD浏览器
-            iPad: u.indexOf('iPad') > -1, //是否iPad
-            webApp: u.indexOf('Safari') == -1, //是否web应用程序，没有头部与底部
-            weixin: u.indexOf('MicroMessenger') > -1, //是否微信 （2015-01-22新增）
-            qq: u.match(/\sQQ/i) == " qq" //是否QQ
-        };
-    }(),
-    language:(navigator.browserLanguage || navigator.language).toLowerCase()
-}
+let l3: boolean | undefined;
+let roomList: string[] = [];
 
 // eslint-disable-next-line prefer-const
 zg = new ZegoExpressEngine(appID, server);
 
-window.zg = zg;
-window.useLocalStreamList = useLocalStreamList;
 
-async function checkAnRun(checkScreen) {
+async function checkAnRun(checkScreen?: boolean): Promise<boolean> {
     console.log('sdk version is', zg.getVersion());
     try {
         const result = await zg.checkSystemRequirements();
 
         console.warn('checkSystemRequirements ', result);
-        !result.videoCodec.H264 && $('#videoCodeType option:eq(1)').attr('disabled', 'disabled');
-        !result.videoCodec.VP8 && $('#videoCodeType option:eq(2)').attr('disabled', 'disabled');
+        if (result.videoCodec && !result.videoCodec.H264) {
+            $('#videoCodeType option:eq(1)').attr('disabled', 'disabled');
+        }
+        if (result.videoCodec && !result.videoCodec.VP8) {
+            $('#videoCodeType option:eq(2)').attr('disabled', 'disabled');
+        }
 
         if (!result.webRTC) {
             alert('browser is not support webrtc!!');
             return false;
-        } else if (!result.videoCodec.H264 && !result.videoCodec.VP8) {
+        } else if (!result.videoCodec || !(result.videoCodec.H264 || result.videoCodec.VP8)) {
             alert('browser is not support H264 and VP8');
             return false;
-        } else if (result.videoCodec.H264) {
-            supportScreenSharing = result.screenSharing;
+        } else if (result.videoCodec && result.videoCodec.H264) {
+            supportScreenSharing = !!result.screenSharing;
             if (checkScreen && !supportScreenSharing) alert('browser is not support screenSharing');
-            previewVideo = $('#previewVideo')[0];
+            previewVideo = $('#previewVideo')[0] as HTMLVideoElement;
             start();
         } else {
             alert('不支持H264，请前往混流转码测试');
@@ -88,11 +153,9 @@ async function checkAnRun(checkScreen) {
         console.error('checkSystemRequirements', err);
         return false;
     }
-
-
 }
 
-async function start() {
+async function start(): Promise<void> {
     initSDK();
 
     zg.setLogConfig({
@@ -132,10 +195,10 @@ async function start() {
     });
 }
 
-async function enumDevices() {
-    const audioInputList = [],
-        videoInputList = [];
-    const deviceInfo = await zg.enumDevices();
+async function enumDevices(): Promise<void> {
+    const audioInputList: string[] = [];
+    const videoInputList: string[] = [];
+    const deviceInfo = await zg.enumDevices() as EnumDevicesResult;
 
     deviceInfo &&
         deviceInfo.microphones.map((item, index) => {
@@ -164,19 +227,21 @@ async function enumDevices() {
     $('#videoList').html(videoInputList.join(''));
 }
 
-function initSDK() {
+function initSDK(): void {
     enumDevices();
 
-    zg.on('roomStateUpdate', (roomID, state, errorCode, extendedData) => {
+    zg.on('roomStateUpdate', (roomID: string, state: string, errorCode: number, extendedData: any) => {
         console.warn('roomStateUpdate: ', roomID, state, errorCode, extendedData);
     });
-    zg.on('roomUserUpdate', (roomID, updateType, userList) => {
+    
+    zg.on('roomUserUpdate', (roomID: string, updateType: 'ADD' | 'DELETE', userList: any[]) => {
         console.warn(
             `roomUserUpdate: room ${roomID}, user ${updateType === 'ADD' ? 'added' : 'left'} `,
             JSON.stringify(userList),
         );
     });
-    zg.on('publisherStateUpdate', result => {
+    
+    zg.on('publisherStateUpdate', (result: PublisherStateUpdateEvent) => {
         console.log('publisherStateUpdate: ', result.streamID, result.state);
         if (result.state == 'PUBLISHING') {
             console.info(' publish  success ' + result.streamID);
@@ -188,21 +253,10 @@ function initSDK() {
             } else {
                 console.error('publish error ' + result.errorCode);
             }
-            // const _msg = stateInfo.error.msg;
-            // if (stateInfo.error.msg.indexOf ('server session closed, reason: ') > -1) {
-            //         const code = stateInfo.error.msg.replace ('server session closed, reason: ', '');
-            //         if (code === '21') {
-            //                 _msg = '音频编解码不支持(opus)';
-            //         } else if (code === '22') {
-            //                 _msg = '视频编解码不支持(H264)'
-            //         } else if (code === '20') {
-            //                 _msg = 'sdp 解释错误';
-            //         }
-            // }
-            // alert('推流失败,reason = ' + _msg);
         }
     });
-    zg.on('playerStateUpdate', result => {
+    
+    zg.on('playerStateUpdate', (result: PlayerStateUpdateEvent) => {
         console.log('playerStateUpdate', result.streamID, result.state);
         if (result.state == 'PLAYING') {
             console.info(' play  success ' + result.streamID);
@@ -211,7 +265,8 @@ function initSDK() {
             if (browser === 'Safari') {
                 const videos = $('.remoteVideo video');
                 for (let i = 0; i < videos.length; i++) {
-                    videos[i].srcObject = videos[i].srcObject;
+                    const videoEl = videos[i] as HTMLVideoElement;
+                    videoEl.srcObject = videoEl.srcObject;
                 }
             }
         } else if (result.state == 'PLAY_REQUESTING') {
@@ -222,70 +277,40 @@ function initSDK() {
             } else {
                 console.error('play error ' + result.errorCode);
             }
-
-            // const _msg = stateInfo.error.msg;
-            // if (stateInfo.error.msg.indexOf ('server session closed, reason: ') > -1) {
-            //         const code = stateInfo.error.msg.replace ('server session closed, reason: ', '');
-            //         if (code === '21') {
-            //                 _msg = '音频编解码不支持(opus)';
-            //         } else if (code === '22') {
-            //                 _msg = '视频编解码不支持(H264)'
-            //         } else if (code === '20') {
-            //                 _msg = 'sdp 解释错误';
-            //         }
-            // }
-            // alert('拉流失败,reason = ' + _msg);
         }
     });
-    zg.on('streamExtraInfoUpdate', (roomID, streamList) => {
+    
+    zg.on('streamExtraInfoUpdate', (roomID: string, streamList: any[]) => {
         console.warn(`streamExtraInfoUpdate: room ${roomID},  `, JSON.stringify(streamList));
     });
-    zg.on('roomStreamUpdate', async (roomID, updateType, streamList, extendedData) => {
+    
+    zg.on('roomStreamUpdate', async (roomID: string, updateType: 'ADD' | 'DELETE', streamList: StreamInfo[], extendedData: any) => {
         console.warn('roomStreamUpdate 1 roomID ', roomID, streamList, extendedData);
-        // let queue = []
         if (updateType == 'ADD') {
             for (let i = 0; i < streamList.length; i++) {
                 console.info(streamList[i].streamID + ' was added');
-                let remoteStream;
-                let playOption = {};
+                let remoteStream: MediaStream | null = null;
+                let playOption: any = {};
 
                 if($("#videoCodec").val()) playOption.videoCodec = $("#videoCodec").val();
-                if(l3 == true) playOption.resourceMode = 2;
+                if(l3 == true) playOption.resourceMode = 2 as 1 | 2;
 
-                zg.startPlayingStream(streamList[i].streamID,playOption).then(stream => {
+                try {
+                    const stream = await zg.startPlayingStream(streamList[i].streamID, playOption);
                     remoteStream = stream;
                     useLocalStreamList.push(streamList[i]);
-                    let videoTemp = $(`<video id=${streamList[i].streamID} autoplay muted playsinline controls></video>`)
-                    //queue.push(videoTemp)
+                    const videoTemp = $(`<video id=${streamList[i].streamID} autoplay muted playsinline controls></video>`);
                     $('.remoteVideo').append(videoTemp);
-                    const video = $('.remoteVideo video:last')[0];
+                    const video = $('.remoteVideo video:last')[0] as HTMLVideoElement;
                     console.warn('video', video, remoteStream);
-                    video.srcObject = remoteStream;
-                    video.muted = false;
-                    // videoTemp = null;
-                }).catch(err => {
+                    if (remoteStream && video) {
+                        video.srcObject = remoteStream;
+                        video.muted = false;
+                    }
+                } catch (err) {
                     console.error('err', err);
-                });
-
+                }
             }
-            // const inIphone = browser.versions.mobile && browser.versions.ios
-            // const inSafari = browser.versions.webApp
-            // const inWx = browser.versions.weixin
-            // if(streamList.length > 1 && (inIphone || inSafari || inWx)) {
-            //     const ac = zc.zegoWebRTC.ac;
-            //     ac.resume();
-            //     const gain = ac.createGain();
-
-            //     while(queue.length) {
-            //         let temp = queue.shift()
-            //         if(temp.srcObject) {
-            //             queue.push(ac.createMediaStreamSource(temp.srcObject))
-            //         } else {
-            //             temp.connect(gain)
-            //         }
-            //     }
-            //     gain.connect(ac.destination);
-            // }
         } else if (updateType == 'DELETE') {
             for (let k = 0; k < useLocalStreamList.length; k++) {
                 for (let j = 0; j < streamList.length; j++) {
@@ -298,7 +323,6 @@ function initSDK() {
 
                         console.info(useLocalStreamList[k].streamID + 'was devared');
 
-
                         $('.remoteVideo video:eq(' + k + ')').remove();
                         useLocalStreamList.splice(k--, 1);
                         break;
@@ -308,49 +332,53 @@ function initSDK() {
         }
     });
 
-    zg.on('playQualityUpdate', async (streamID, streamQuality) => {
+    zg.on('playQualityUpdate', async (streamID: string, streamQuality: any) => {
         console.log(
             `play#${streamID} videoFPS: ${streamQuality.video.videoFPS} videoBitrate: ${streamQuality.video.videoBitrate} audioBitrate: ${streamQuality.audio.audioBitrate} audioFPS: ${streamQuality.audio.audioFPS}`,
         );
         console.log(`play#${streamID}`, streamQuality);
     });
 
-    zg.on('publishQualityUpdate', async (streamID, streamQuality) => {
+    zg.on('publishQualityUpdate', async (streamID: string, streamQuality: any) => {
         console.log(
             `publish#${streamID} videoFPS: ${streamQuality.video.videoFPS} videoBitrate: ${streamQuality.video.videoBitrate} audioBitrate: ${streamQuality.audio.audioBitrate} audioFPS: ${streamQuality.audio.audioFPS}`,
         );
         console.log(`publish#${streamID}`, streamQuality);
     });
 
-    zg.on('remoteCameraStatusUpdate', (streamID, status) => {
-        console.warn(`remoteCameraStatusUpdate ${streamID} camera status ${status == 'OPEN' ? 'open' : 'close'}`);
+    zg.on('remoteCameraStatusUpdate', (streamID: string, status: 'OPEN' | 'MUTE') => {
+        console.warn(`remoteCameraStatusUpdate ${streamID} camera status ${status == 'OPEN' ? 'open' : 'mute'}`);
+    });
+    
+    zg.on('remoteMicStatusUpdate', (streamID: string, status: 'OPEN' | 'MUTE') => {
+        console.warn(`remoteMicStatusUpdate ${streamID} micro status ${status == 'OPEN' ? 'open' : 'mute'}`);
     });
 
-    zg.on('remoteMicStatusUpdate', (streamID, status) => {
-        console.warn(`remoteMicStatusUpdate ${streamID} micro status ${status == 'OPEN' ? 'open' : 'close'}`);
-    });
-
-    zg.on('soundLevelUpdate', (streamList) => {
+    zg.on('soundLevelUpdate', (streamList: SoundLevelInfo[]) => {
         streamList.forEach(stream => {
             stream.type == 'push' && $('#soundLevel').html(Math.round(stream.soundLevel) + '');
             console.warn(`${stream.type} ${stream.streamID}, soundLevel: ${stream.soundLevel}`);
         });
     });
-    zg.on('deviceError', (errorCode, deviceName) => {
+    
+    zg.on('deviceError', (errorCode: number, deviceName: string) => {
         console.warn(`deviceError`, errorCode, deviceName);
     });
-    zg.on('videoDeviceStateChanged', (updateType, device) => {
+    
+    zg.on('videoDeviceStateChanged', (updateType: string, device: DeviceInfo) => {
         console.warn(`videoDeviceStateChanged`, device, updateType);
     });
-    zg.on('audioDeviceStateChanged', (updateType, deviceType, device) => {
+    
+    zg.on('audioDeviceStateChanged', (updateType: string, deviceType: string, device: DeviceInfo) => {
         console.warn(`audioDeviceStateChanged`, device, updateType, deviceType);
     });
-    zg.on('roomOnlineUserCountUpdate', (roomID, count) => {
+    
+    zg.on('roomOnlineUserCountUpdate', (roomID: string, count: number) => {
         console.warn(`roomOnlineUserCountUpdate ${roomID} ${count}`);
     });
 }
 
-async function login(roomId) {
+async function login(roomId: string): Promise<boolean> {
     // 获取token需要客户自己实现，token是对登录房间的唯一验证
     // Obtaining a token needs to be implemented by the customer. The token is the only verification for the login room.
     let token = '';
@@ -370,35 +398,32 @@ async function login(roomId) {
             id_name: userID,
         });
     }
-    await zg.loginRoom(roomId, token, { userID, userName }, { userUpdate: true });
+    
+    const userInfo: UserInfo = { userID, userName };
+    const loginOptions: RoomLoginOptions = { userUpdate: true };
+    
+    await zg.loginRoom(roomId, token, userInfo, loginOptions);
     roomList.push(roomId);
 
     return true;
 }
 
-async function enterRoom() {
-    const roomId = $('#roomId').val();
+async function enterRoom(): Promise<boolean> {
+    const roomId = $('#roomId').val() as string;
     if (!roomId) {
         alert('roomId is empty');
         return false;
     }
 
-    // for (let i = 0; i < useLocalStreamList.length; i++) {
-    //     useLocalStreamList[i].streamID && zg.stopPlayingStream(useLocalStreamList[i].streamID);
-    // }
-
     await login(roomId);
     loginRoom = true;
-
-    // console.warn('remoteVideo')
-    // $('.remoteVideo').html('');
 
     return true;
 }
 
-async function logout() {
-    console.info('leave room  and close stream');
-    const roomId = $('#roomId').val();
+async function logout(): Promise<void> {
+    console.info('leave room and close stream');
+    const roomId = $('#roomId').val() as string;
     // 停止拉流
     // stop playing
     for (let i = 0; i < useLocalStreamList.length; i++) {
@@ -408,14 +433,15 @@ async function logout() {
     // 清空页面
     // Clear page
     useLocalStreamList = [];
-    // window.useLocalStreamList = [];
 
     roomList.splice(roomList.findIndex(room => room == roomId), 1);
 
-    if (previewVideo.srcObject && isPreviewed && (!roomId || roomList.length == 0) ) {
+    if (previewVideo.srcObject && isPreviewed && (!roomId || roomList.length == 0)) {
       previewVideo.srcObject = null;
       zg.stopPublishingStream(publishStreamId);
-      zg.destroyStream(localStream);
+      if (localStream) {
+          zg.destroyStream(localStream);
+      }
       isPreviewed = false;
       !$('.sound').hasClass('d-none') && $('.sound').addClass('d-none');
     }
@@ -431,59 +457,66 @@ async function logout() {
     loginRoom = false;
 }
 
-async function publish(constraints, isNew) {
+interface Constraints {
+    camera?: {
+        video?: boolean;
+        audio?: boolean;
+        audioInput?: string;
+        videoInput?: string;
+        channelCount?: 1 | 2;
+    };
+}
+
+interface PublishOption {
+    extraInfo?: string;
+    videoCodec?: "H264" | "VP8";
+    roomID?: string;
+}
+
+async function publish(constraints?: Constraints, isNew?: boolean): Promise<void> {
     console.warn('createStream', $('#audioList').val(), $('#videoList').val());
     console.warn('constraints', constraints);
-    const video =
-        constraints && constraints.camera && typeof constraints.camera.video === 'boolean'
-            ? constraints.camera.video
-            : undefined;
+    const video = constraints && constraints.camera && typeof constraints.camera.video === 'boolean'
+        ? constraints.camera.video
+        : undefined;
 
-    const _constraints = {
+    const _constraints: Constraints = {
         camera: {
-            audioInput: $('#audioList').val(),
-            videoInput: $('#videoList').val(),
+            audioInput: $('#audioList').val() as string,
+            videoInput: $('#videoList').val() as string,
             video: video !== undefined ? video : $('#videoList').val() === '0' ? false : true,
             audio: $('#audioList').val() === '0' ? false : true,
-            // channelCount: constraints && constraints.camera && constraints.camera.channelCount,
         },
     };
-    constraints && constraints.camera && Object.assign(_constraints.camera, constraints.camera);
-    !_constraints.camera.video && (previewVideo.controls = true);
-    const playType =
-        _constraints.camera.audio === false ? 'Video' : _constraints.camera.video === false ? 'Audio' : 'all';
+    
+    if (constraints && constraints.camera) {
+        Object.assign(_constraints.camera!, constraints.camera);
+    }
+    
+    !_constraints.camera?.video && (previewVideo.controls = true);
+    const playType = _constraints.camera?.audio === false ? 'Video' : _constraints.camera?.video === false ? 'Audio' : 'all';
     publishType = playType;
-    // console.error('playType', playType);
     push(_constraints, { extraInfo: JSON.stringify({ playType }) }, isNew);
 }
-async function push(constraints, publishOption = {}, isNew) {
+
+async function push(constraints: Constraints, publishOption: PublishOption = {}, isNew?: boolean): Promise<void> {
     try {
         if(localStream) {
-            zg.destroyStream(localStream)
+            zg.destroyStream(localStream);
         }
         localStream = await zg.createStream(constraints);
-        // var AudioContext = window.AudioContext || window.webkitAudioContext; // 兼容性
-        // let localTrack= localStream.getAudioTracks()[0];
-        // let audioContext = new AudioContext();// 创建Audio上下文
-        // let mediaStreamSource = audioContext.createMediaStreamSource(localStream);
-        // let destination = audioContext.createMediaStreamDestination();
-        // let gainNode = audioContext.createGain();
-        // mediaStreamSource.connect(gainNode);
-        // gainNode.connect(destination);
-        // gainNode.gain.value=3;
-        // let audioTrack = destination.stream.getAudioTracks()[0];
-        // localStream.removeTrack(localTrack);
-        // localStream.addTrack(audioTrack);
         previewVideo.srcObject = localStream;
         isPreviewed = true;
         $('.sound').hasClass('d-none') && $('.sound').removeClass('d-none');
         isNew && (publishStreamId = 'webrtc' + new Date().getTime());
-        if($("#videoCodec").val()) publishOption.videoCodec = $("#videoCodec").val();
-        if ($('#roomId').val()) publishOption.roomID = $('#roomId').val();
+        
+        if($("#videoCodec").val()) publishOption.videoCodec = $("#videoCodec").val() as "H264" | "VP8";
+        if ($('#roomId').val()) publishOption.roomID = $('#roomId').val() as string;
+        
         const result = zg.startPublishingStream(publishStreamId, localStream, publishOption);
         console.log('publish stream' + publishStreamId, result);
     } catch (err) {
-        if (err.name) {
+        if (err instanceof Error) {
             console.error('createStream', err.name, err.message);
         } else {
             console.error('createStream error', err);
@@ -492,12 +525,12 @@ async function push(constraints, publishOption = {}, isNew) {
 }
 
 $('#toggleCamera').click(function () {
-    zg.mutePublishStreamVideo(previewVideo.srcObject, !$(this).hasClass('disabled'));
+    zg.mutePublishStreamVideo(previewVideo.srcObject as MediaStream, !$(this).hasClass('disabled'));
     $(this).toggleClass('disabled');
 });
 
 $('#toggleSpeaker').click(function () {
-    zg.mutePublishStreamAudio(previewVideo.srcObject, !$(this).hasClass('disabled'));
+    zg.mutePublishStreamAudio(previewVideo.srcObject as MediaStream, !$(this).hasClass('disabled'));
     $(this).toggleClass('disabled');
 });
 
@@ -507,12 +540,12 @@ $('#enterRoom').click(async () => {
       loginSuc = await enterRoom();
       if (loginSuc) {
           if(localStream) {
-              zg.destroyStream(localStream)
+              zg.destroyStream(localStream);
           }
           localStream = await zg.createStream({
               camera: {
-                  audioInput: $('#audioList').val() ,
-                  videoInput: $('#videoList').val() ,
+                  audioInput: $('#audioList').val() as string,
+                  videoInput: $('#videoList').val() as string,
                   video: $('#videoList').val() === '0' ? false : true,
                   audio: $('#audioList').val() === '0' ? false : true,
               },
@@ -544,7 +577,3 @@ export {
     publishType,
     l3,
 };
-
-// $(window).on('unload', function() {
-//     logout();
-// });

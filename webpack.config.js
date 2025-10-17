@@ -5,9 +5,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
   mode: 'development',
   entry: {
-    'main': './src/index.js',
-    'common': './src/common.js',
-    'content': './src/content.js'
+    'main': './src/index.ts',
+    'common': './src/common.ts',
   },
   output: {
     filename: '[name].bundle.js',
@@ -18,10 +17,15 @@ module.exports = {
     globalObject: "typeof self !== 'undefined' ? self : this"
   },
   resolve: {
-    extensions: ['.js', '.json']
+    extensions: ['.ts', '.tsx', '.js', '.json']
   },
   module: {
     rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: ['ts-loader']
+      },
       {
         test: /\.css$/,
         use: [
@@ -69,7 +73,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: './src/index.html',
-      chunks: ['main', 'common', 'content']
+      chunks: ['main', 'common']
     })
   ],
   devServer: {

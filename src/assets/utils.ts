@@ -1,4 +1,4 @@
-export function addCssByLink(url) {
+export function addCssByLink(url: string): void {
 	let doc = document;
 	let link = doc.createElement('link');
 	link.setAttribute('rel', 'stylesheet');
@@ -10,8 +10,8 @@ export function addCssByLink(url) {
 	else doc.documentElement.appendChild(link);
 }
 
-export function loadJs(url, callback) {
-	let script = document.createElement('script');
+export function loadJs(url: string, callback?: () => void): void {
+	let script = document.createElement('script') as HTMLScriptElement & { readyState?: string; onreadystatechange?: (() => void) | null };
 	script.type = 'text/javascript';
 	if (typeof callback != 'undefined') {
 		if (script.readyState) {
@@ -31,13 +31,13 @@ export function loadJs(url, callback) {
 	document.body.appendChild(script);
 }
 
-export function getBrowser() {
+export function getBrowser(): string {
 	let ua = window.navigator.userAgent;
-	let isWechat = ua.toLowerCase().match(/MicroMessenger/i) == "micromessenger";
-	let isIE = window['ActiveXObject'] != undefined && ua.indexOf('MSIE') != -1;
+	let isWechat = ua.toLowerCase().match(/MicroMessenger/i)?.[0] === "micromessenger";
+	let isIE = (window as any).ActiveXObject != undefined && ua.indexOf('MSIE') != -1;
 	let isFirefox = ua.indexOf('Firefox') != -1;
-	let isOpera = window['opr'] != undefined;
-	let isChrome = ua.indexOf('Chrome') && window['chrome'];
+	let isOpera = (window as any).opr != undefined;
+	let isChrome = ua.indexOf('Chrome') !== -1 && (window as any).chrome;
 	let isSafari = ua.indexOf('Safari') != -1 && ua.indexOf('Version') != -1;
 	if (isWechat) {
 		return 'Wechat';
@@ -52,11 +52,11 @@ export function getBrowser() {
 	} else if (isSafari) {
 		return 'Safari';
 	} else {
-		return 'Unkown';
+		return 'Unknown';
 	}
 }
 
-export function IsPC() {
+export function IsPC(): boolean {
 	return ![ 'Android', 'iPhone', 'SymbianOS', 'Windows Phone', 'iPad', 'iPod' ].some(
 		(item) => navigator.userAgent.indexOf(item) > 0
 	);
