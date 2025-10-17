@@ -1,57 +1,19 @@
 const path = require('path');
-const filterFileList = require('./tools');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
-const miniCssExtractPlugin = require('mini-css-extract-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 const internalIp = require('internal-ip');
-const tempList = [];
-const entry = {};
-const htmlPlugins = [];
-filterFileList('./src', tempList);
-
-const targetList = tempList.filter(path => {
-    if (path.includes('docsSharing') || path.includes('whiteboard')) {
-        return false;
-    } else {
-        return true;
-    }
-});
-
-
-entry['content'] = targetList.find(item => item.endsWith('content.js'));
-targetList
-    .filter(item => item.endsWith('index.js'))
-    .forEach(p => {
-        const regResult = /.+src[\/|\\](.+)[\/|\\]index.js$/.exec(p);
-        if (regResult && regResult[1]) {
-            entry[regResult[1]] = regResult[0];
-        }
-    });
-
-targetList
-    .filter(item => item.endsWith('index.html'))
-    .forEach(tepmlate => {
-        const regResult = /.+src[\/|\\](.+)[\/|\\]index.html$/.exec(tepmlate);
-        if (regResult && regResult[1]) {
-            htmlPlugins.push(
-                new HtmlWebpackPlugin({
-                    template: tepmlate,
-                    chunks: [regResult[1]],
-                    filename: regResult[1] + '/index.html',
-                }),
-            );
-        } else if (tepmlate.includes('src/index.html')) {
-            htmlPlugins.push(
-                new HtmlWebpackPlugin({
-                    template: './src/index.html',
-                    filename: 'index.html',
-                    chunks: ['content'],
-                    favicon: './src/favicon.ico',
-                }),
-            );
-        }
-    });
+const entry = {
+    'assistDev': './src/assistDev/index.js',
+    'common': './src/common.js',
+    'content': './src/content.js'
+};
+const htmlPlugins = [
+    new HtmlWebpackPlugin({
+        template: './src/assistDev/index.html',
+        chunks: ['assistDev', 'common', 'content'],
+        filename: 'assistDev/index.html',
+    })
+];
 
 module.exports = {
     entry,
@@ -71,7 +33,7 @@ module.exports = {
             {
                 test: /\.css$/,
                 use: [
-                    miniCssExtractPlugin.loader,
+                    'style-loader',
                     {
                         loader: 'css-loader',
                         options: {
@@ -111,24 +73,11 @@ module.exports = {
                 use: 'ts-loader',
                 exclude: /node_modules/,
             },
-            {
-                test: require.resolve('jquery'),
-                loader: 'expose-loader?$!expose-loader?jQuery',
-            },
+
         ],
     },
     plugins: [
         ...htmlPlugins,
-
-        new miniCssExtractPlugin({
-            filename: 'index.[contenthash:8].css',
-        }),
-        new CopyWebpackPlugin({
-                patterns: [
-                  { from: './src/docsSharing', to: './docsSharing' },
-                  { from: './src/whiteboard', to: './whiteboard' },
-                ],
-              }),
         new webpack.ProvidePlugin({
             $: 'jquery',
             jQuery: 'jquery',
