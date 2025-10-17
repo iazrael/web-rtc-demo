@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "dev": "webpack-dev-server"
+    "dev": "webpack-dev-server",
+    "start-server": "cd server && pnpm install && pnpm run dev"
   },
   "author": "choui",
   "license": "ISC",
