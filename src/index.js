@@ -1,5 +1,5 @@
-import { checkAnRun, previewVideo } from '../common';
-import { getBrowser } from '../assets/utils';
+import { checkAnRun, previewVideo } from './common';
+import { getBrowser } from './assets/utils';
 import { ZegoExpressEngine } from 'zego-express-engine-webrtc';
 let zg
 let appID
