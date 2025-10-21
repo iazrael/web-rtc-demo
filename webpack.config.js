@@ -6,7 +6,6 @@ module.exports = {
   mode: 'development',
   entry: {
     'main': './src/index.ts',
-    'common': './src/common.ts',
   },
   output: {
     filename: '[name].bundle.js',
@@ -73,7 +72,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: './src/index.html',
-      chunks: ['main', 'common']
+      chunks: ['main']
     })
   ],
   devServer: {
