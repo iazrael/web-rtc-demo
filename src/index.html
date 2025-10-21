@@ -145,10 +145,6 @@
         <h6 class="border-bottom border-gray pb-2 mb-0 assistDevPageTitle">基础推拉流</h6>
         <button id="configToggle" class="config-toggle">配置参数</button>
       </div>
-      <div class="desc" style="margin-top: 16px;">
-        <span class="tokenDesc">请输入即构控制台中项目对应的 AppID -> Web -> AppID），用以体验示例 demo。</span>
-        <a class="toConsole" href="https://console.zego.im" target="_blank">点击打开ZEGO控制台</a>
-      </div>
 
       <div class="row" style="margin-top:1%">
 
@@ -169,66 +165,9 @@
 
       </div>
 
-      <div class="row" style="margin-bottom: 24px">
-        <div class="col-sm">
-          <div class="input-group input-group-sm mb-0">
-            <div class="input-group-prepend">
-              <label class="input-group-text" for="appId"><strong class="text-gray-dark ">AppID</strong></label>
-            </div>
-            <input type="text" class="form-control d-inline" id="appId" style="width: 75%; max-width: 400px"
-              aria-describedby="emailHelp" placeholder="please enter AppID">
-          </div>
-        </div>
-        <!-- <div class="col-sm">
-          <div class="input-group input-group-sm mb-0">
-            <div class="input-group-prepend">
-              <label class="input-group-text" for="serverUrl"><strong class="text-gray-dark ">Server</strong></label>
-            </div>
-            <input type="text" class="form-control d-inline" id="serverUrl" style="width: 75%; max-width: 400px"
-              aria-describedby="emailHelp" placeholder="please enter server url">
-          </div>
-        </div> -->
-      </div>
-      <div class="row" style="margin-bottom: 24px">
-        <div class="col-sm">
-          <div class="input-group input-group-sm mb-0">
-            <div class="input-group-prepend">
-              <label class="input-group-text" for="roomId"><strong class="text-gray-dark ">RoomID</strong></label>
-            </div>
-            <input type="text" class="form-control d-inline" id="roomId" style="width: 75%; max-width: 400px"
-              value="0001" aria-describedby="emailHelp" placeholder="please enter RoomID">
-          </div>
-        </div>
-        <div class="col-sm">
-          <div class="input-group input-group-sm mb-0">
-            <div class="input-group-prepend">
-              <label class="input-group-text" for="userId"><strong class="text-gray-dark ">UserID</strong></label>
-            </div>
-            <input type="text" class="form-control d-inline" id="userId" style="width: 75%; max-width: 400px"
-              aria-describedby="emailHelp" placeholder="please enter userID">
-          </div>
-        </div>
-        <div class="col-sm">
-          <div class="input-group input-group-sm mb-0">
-            <div class="input-group-prepend">
-              <label class="input-group-text" for="token"><strong class="text-gray-dark ">Token</strong></label>
-            </div>
-            <input type="text" class="form-control d-inline" id="token" style="width: 75%; max-width: 400px"
-              aria-describedby="emailHelp" placeholder="please enter token">
-          </div>
-        </div>
-      </div>
-
-      <div class="row" style="margin-bottom: 24px">
-        <div class="col-sm">
-          <div class="input-group input-group-sm mb-0">
-            <div class="input-group-prepend">
-              <label class="input-group-text" for="streamId"><strong class="text-gray-dark ">StreamID</strong></label>
-            </div>
-            <input type="text" class="form-control d-inline" id="streamId" style="width: 75%; max-width: 400px"
-              aria-describedby="emailHelp" placeholder="please enter streamId">
-          </div>
-        </div>
+      <!-- 所有输入框已移至配置参数弹窗 -->
+      <div style="margin-bottom: 24px; padding: 15px; background-color: #e9ecef; border-radius: 5px;">
+        <p style="margin: 0;">请点击右上角的"配置参数"按钮设置AppID、Secret、UserID、RoomID和StreamID</p>
       </div>
 
       <div class="row">
@@ -294,20 +233,7 @@
           <input type="text" class="form-control" id="configStreamId" placeholder="请输入StreamID">
         </div>
         
-        <div class="form-group">
-          <label for="configTokenUrl"><strong>Token URL</strong></label>
-          <input type="text" class="form-control" id="configTokenUrl" placeholder="请输入Token服务器地址">
-        </div>
-        
-        <div class="form-group">
-          <label for="configServer"><strong>Server</strong></label>
-          <input type="text" class="form-control" id="configServer" placeholder="请输入服务器地址">
-        </div>
-        
-        <div class="form-group">
-          <label for="configCgiToken"><strong>CGI Token</strong></label>
-          <input type="text" class="form-control" id="configCgiToken" placeholder="请输入CGI Token（可选）">
-        </div>
+
         
         <div class="form-group">
           <label for="configEffectiveTime"><strong>有效时间（秒）</strong></label>
@@ -340,8 +266,7 @@
     // 配置项
     const configFields = [
       'configAppId', 'configSecret', 'configUserId', 'configRoomId', 
-      'configStreamId', 'configTokenUrl', 'configServer', 'configCgiToken',
-      'configEffectiveTime', 'configPayload'
+      'configStreamId', 'configEffectiveTime', 'configPayload'
     ];
     
     // 从localStorage加载配置
@@ -382,21 +307,6 @@
       saveConfigToStorage();
       configModal.style.display = 'none';
       
-      // 如果主页面有对应的输入框，也更新它们
-      const mainFields = {
-        'configAppId': 'appId',
-        'configUserId': 'userId', 
-        'configRoomId': 'roomId',
-        'configStreamId': 'streamId'
-      };
-      
-      for (const [configField, mainField] of Object.entries(mainFields)) {
-        const configValue = document.getElementById(configField)?.value;
-        const mainElement = document.getElementById(mainField);
-        if (configValue && mainElement && !mainElement.value) {
-          mainElement.value = configValue;
-        }
-      }
     });
     
     // 打开弹窗
@@ -421,24 +331,9 @@
       }
     });
     
-    // 页面加载时尝试填充主页面表单
+    // 页面加载时加载配置
     window.addEventListener('DOMContentLoaded', () => {
       loadConfigFromStorage();
-      
-      const mainFields = {
-        'configAppId': 'appId',
-        'configUserId': 'userId', 
-        'configRoomId': 'roomId',
-        'configStreamId': 'streamId'
-      };
-      
-      for (const [configField, mainField] of Object.entries(mainFields)) {
-        const savedValue = localStorage.getItem(configField);
-        const mainElement = document.getElementById(mainField);
-        if (savedValue && mainElement && !mainElement.value) {
-          mainElement.value = savedValue;
-        }
-      }
     });
   </script>
 

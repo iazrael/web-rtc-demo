@@ -27,8 +27,6 @@ function initializeWithStoredConfig(): void {
     const storedUserId = localStorage.getItem('configUserId');
     const storedRoomId = localStorage.getItem('configRoomId');
     const storedStreamId = localStorage.getItem('configStreamId');
-    const storedServer = localStorage.getItem('configServer');
-    const storedTokenUrl = localStorage.getItem('configTokenUrl');
     
     // 设置默认值（如果localStorage中有则使用localStorage的值）
     $('#userId').val(storedUserId || 'sample' + new Date().getTime());
@@ -40,14 +38,6 @@ function initializeWithStoredConfig(): void {
     
     if (storedRoomId) {
       $('#roomId').val(storedRoomId);
-    }
-    
-    if (storedServer) {
-      server = storedServer;
-    }
-    
-    if (storedTokenUrl) {
-      tokenUrl = storedTokenUrl;
     }
   } catch (error) {
     console.error('Failed to initialize with stored config:', error);
@@ -128,7 +118,7 @@ function registerEventListeners(): void {
   $('#openRoom').click(async () => {
     const currentId = $('#appId').val() as string;
     if (!currentId) {
-      alert('AppID is empty');
+      alert('AppID is empty'); 
       return;
     } else if (isNaN(Number(currentId))) {
       alert('AppID must be number');
@@ -154,19 +144,13 @@ function registerEventListeners(): void {
           zegoClient.cleanup();
         }
 
-        // 从localStorage获取最新配置
-        const storedCgiToken = localStorage.getItem('configCgiToken') || '';
-        const storedServer = localStorage.getItem('configServer') || server;
-        const storedTokenUrl = localStorage.getItem('configTokenUrl') || tokenUrl;
-        
         // 创建新实例
-        zegoClient = new ZegoClient({
-          appID,
-          server: storedServer,
-          tokenUrl: storedTokenUrl,
-          cgiToken: storedCgiToken,
-          debug
-        });
+          zegoClient = new ZegoClient({
+            appID,
+          server,
+          tokenUrl,
+            debug
+          });
 
         // 设置预览视频元素和用户信息
         zegoClient.setPreviewVideo(previewVideo);
