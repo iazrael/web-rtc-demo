@@ -20,7 +20,7 @@
     "jquery-i18next": "^1.2.1",
     "popper.js": "^1.16.1",
     "vconsole": "^3.3.4",
-    "zego-express-engine-webrtc": "^2.0.0"
+    "zego-express-engine-webrtc": "3.9.123"
   },
   "devDependencies": {
     "@types/jquery": "^3.5.33",

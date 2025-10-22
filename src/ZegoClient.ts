@@ -1,50 +1,11 @@
 import { ZegoExpressEngine } from 'zego-express-engine-webrtc';
-import { ZegoUser } from 'zego-express-engine-webrtc/sdk/src/common/zego.entity';
+import type ZegoLocalStream from "zego-express-engine-webrtc/sdk/code/zh/ZegoLocalStream.web";
+import type { ZegoEvent,ZegoLocalStreamConfig,ZegoStreamList, ZegoWebPublishOption } from "zego-express-engine-webrtc/sdk/code/zh/ZegoExpressEntity.web";
+import type { ZegoRoomConfig, ZegoUser } from 'zego-express-engine-webrtc/sdk/code/zh/ZegoExpressEntity.rtm';
 import ConfigManager from './assets/ConfigManager';
 import $ from 'jquery';
 import { getBrowser } from './assets/utils';
 
-// 类型定义
-export interface UserInfo {
-  userID: string;
-  userName?: string;
-}
-
-export interface StreamInfo {
-  streamID: string;
-  userID?: string;
-  userName?: string;
-}
-
-export interface RoomLoginOptions {
-  userUpdate: boolean;
-}
-
-export interface DeviceInfo {
-  deviceID: string;
-  deviceName: string;
-}
-
-export interface EnumDevicesResult {
-  microphones: DeviceInfo[];
-  cameras: DeviceInfo[];
-}
-
-export interface Constraints {
-  camera?: {
-    video?: boolean;
-    audio?: boolean;
-    audioInput?: string;
-    videoInput?: string;
-    channelCount?: 1 | 2;
-  };
-}
-
-export interface PublishOption {
-  extraInfo?: string;
-  videoCodec?: "H264" | "VP8";
-  roomID?: string;
-}
 
 export interface ZegoClientOptions {
   appID: number;
@@ -74,7 +35,7 @@ export class ZegoClient {
   private previewVideo: HTMLVideoElement | null = null;
   private localStream: MediaStream | null = null;
   private isPreviewed = false;
-  private useLocalStreamList: StreamInfo[] = [];
+  private useLocalStreamList: ZegoStreamList[] = [];
   private roomList: string[] = [];
   private l3?: boolean;
 
@@ -160,7 +121,7 @@ export class ZegoClient {
     const videoInputList: string[] = [];
 
     try {
-      const deviceInfo = await this.zg.enumDevices() as EnumDevicesResult;
+      const deviceInfo = await this.zg.enumDevices();
 
       deviceInfo && deviceInfo.microphones.map((item, index) => {
         if (!item.deviceName) {
@@ -235,7 +196,7 @@ export class ZegoClient {
       }
     });
 
-    this.zg.on('roomStreamUpdate', async (roomID: string, updateType: 'ADD' | 'DELETE', streamList: StreamInfo[], extendedData: any) => {
+    this.zg.on('roomStreamUpdate', async (roomID: string, updateType: 'ADD' | 'DELETE', streamList: ZegoStreamList[], extendedData: any) => {
       console.warn('roomStreamUpdate roomID ', roomID, streamList, extendedData);
 
       if (updateType == 'ADD') {
@@ -286,12 +247,29 @@ export class ZegoClient {
         stream.type == 'push' && $('#soundLevel').html(Math.round(stream.soundLevel) + '');
       });
     });
+    // // 注意！！！：通过房间自定义消息收到的数据可能会乱序，需要根据 SeqId 字段进行排序。
+    // this.zg.on("recvExperimentalAPI", (result) => {
+    //   const { method, content } = result;
+    //   // !mark
+    //   if (method === "onRecvRoomChannelMessage") {
+    //     try {
+    //       // 解析消息
+    //       const recvMsg = JSON.parse(content.msgContent);
+    //       const { Cmd, SeqId, Data, Round } = recvMsg;
+    //     } catch (error) {
+    //       console.error("解析消息失败:", error);
+    //     }
+    //   }
+    // });
+    // // 启用 onRecvRoomChannelMessage 实验性 API
+    // // !mark
+    // this.zg.callExperimentalAPI({ method: "onRecvRoomChannelMessage", params: {} });
   }
 
   /**
    * 登录房间
    */
-  async loginToRoom(roomId: string, token?: string, userInfo?: UserInfo): Promise<boolean> {
+  async loginToRoom(roomId: string, token?: string, userInfo?: ZegoUser): Promise<boolean> {
     if (!this.zg) {
       throw new Error('SDK not initialized');
     }
@@ -310,7 +288,7 @@ export class ZegoClient {
         userName: userInfo?.userName || this.userName
       };
 
-      const loginOptions: RoomLoginOptions = { userUpdate: true };
+      const loginOptions: ZegoRoomConfig = { userUpdate: true };
 
       await this.zg.loginRoom(roomId, finalToken, finalUserInfo, loginOptions);
       this.roomList.push(roomId);
@@ -415,7 +393,7 @@ export class ZegoClient {
   /**
    * 发布流
    */
-  async publish(constraints?: Constraints): Promise<void> {
+  async publish(constraints?: ZegoLocalStreamConfig): Promise<void> {
     if (!this.zg || !this.previewVideo) {
       throw new Error('SDK not initialized or preview video not set');
     }
@@ -424,7 +402,7 @@ export class ZegoClient {
       ? constraints.camera.video
       : undefined;
 
-    const _constraints: Constraints = {
+    const _constraints: ZegoLocalStreamConfig = {
       camera: {
         audioInput: $('#audioList').val() as string,
         videoInput: $('#videoList').val() as string,
@@ -444,7 +422,7 @@ export class ZegoClient {
   /**
    * 推流
    */
-  private async push(constraints: Constraints, publishOption: PublishOption = {}): Promise<void> {
+  private async push(constraints: ZegoLocalStreamConfig, publishOption: ZegoWebPublishOption = {}): Promise<void> {
     if (!this.zg || !this.previewVideo) return;
 
     try {
