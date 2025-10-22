@@ -87,5 +87,5 @@ function startServer() {
 }
 
 // 先执行webpack编译，然后启动服务器
-buildWebpack();
+// buildWebpack();
 startServer();
