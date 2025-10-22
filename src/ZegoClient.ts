@@ -6,6 +6,83 @@ import ConfigManager from './assets/ConfigManager';
 import $ from 'jquery';
 import { getBrowser } from './assets/utils';
 
+// 消息数据模型
+export interface MessageModel {
+  id: string;
+  timestamp: string;
+  content: string;
+  showTimestamp: boolean;
+  cmd?: string;
+  seqId?: string | number;
+  round?: string | number;
+  data?: any;
+}
+
+// 消息视图模型
+export class MessageViewModel {
+  private messages: MessageModel[] = [];
+  private filterKeyword: string = '';
+  private observers: Array<() => void> = [];
+
+  // 添加消息
+  addMessage(content: string, showTimestamp: boolean = true, cmd?: string, seqId?: string | number, round?: string | number, data?: any): void {
+    const now = new Date();
+    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+    
+    const message: MessageModel = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp,
+      content,
+      showTimestamp,
+      cmd,
+      seqId,
+      round,
+      data
+    };
+    
+    this.messages.push(message);
+    this.notifyObservers();
+  }
+
+  // 设置过滤关键字
+  setFilterKeyword(keyword: string): void {
+    this.filterKeyword = keyword.toLowerCase().trim();
+    this.notifyObservers();
+  }
+
+  // 获取过滤后的消息
+  getFilteredMessages(): MessageModel[] {
+    if (!this.filterKeyword) {
+      return this.messages;
+    }
+    
+    return this.messages.filter(message => {
+      const searchContent = `${message.content} ${message.cmd || ''} ${message.seqId || ''} ${message.round || ''} ${JSON.stringify(message.data || '')}`.toLowerCase();
+      return searchContent.includes(this.filterKeyword);
+    });
+  }
+
+  // 添加观察者
+  addObserver(observer: () => void): void {
+    this.observers.push(observer);
+  }
+
+  // 移除观察者
+  removeObserver(observer: () => void): void {
+    this.observers = this.observers.filter(obs => obs !== observer);
+  }
+
+  // 通知所有观察者
+  private notifyObservers(): void {
+    this.observers.forEach(observer => observer());
+  }
+
+  // 清空消息
+  clearMessages(): void {
+    this.messages = [];
+    this.notifyObservers();
+  }
+}
 
 export interface ZegoClientOptions {
   appID: number;
@@ -38,6 +115,8 @@ export class ZegoClient {
   private useLocalStreamList: ZegoStreamList[] = [];
   private roomList: string[] = [];
   private l3?: boolean;
+  // 消息视图模型
+  private messageViewModel: MessageViewModel = new MessageViewModel();
 
   constructor(options: ZegoClientOptions) {
     this.appID = options.appID;
@@ -52,7 +131,6 @@ export class ZegoClient {
     }
     this.payload = options.payload || '';
   }
-
 
   /**
    * 重新加载配置
@@ -254,14 +332,17 @@ export class ZegoClient {
         const recvMsg = JSON.parse(command);
         const { cmd, seq_id, round, data } = recvMsg;
         console.log('recvMsg', recvMsg);
-        // 显示消息到消息展示区域
-        this.displayMessage(`命令: ${cmd}, 序列号: ${seq_id || '-'}, 轮次: ${round || '-'}`);
+        
+        // 添加消息到视图模型
+        const messageContent = `命令: ${cmd}, 序列号: ${seq_id || '-'}, 轮次: ${round || '-'}`;
+        this.messageViewModel.addMessage(messageContent, true, cmd, seq_id, round);
+        
         if (data) {
           try {
             const dataStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-            this.displayMessage(`Data: ${dataStr}`, false);
+            this.messageViewModel.addMessage(`Data: ${dataStr}`, false, cmd, seq_id, round, data);
           } catch (error) {
-            this.displayMessage(`数据内容解析失败: ${String(data)}`, false);
+            this.messageViewModel.addMessage(`数据内容解析失败: ${String(data)}`, false, cmd, seq_id, round);
           }
         }
       } catch (error) {
@@ -280,14 +361,16 @@ export class ZegoClient {
           const { Cmd, SeqId, Data, Round } = recvMsg;
           console.log('recvMsg', recvMsg);
 
-          // 显示消息到消息展示区域
-          this.displayMessage(`命令: ${Cmd}, 序列号: ${SeqId || '-'}, 轮次: ${Round || '-'}`);
+          // 添加消息到视图模型
+          const messageContent = `命令: ${Cmd}, 序列号: ${SeqId || '-'}, 轮次: ${Round || '-'}`;
+          this.messageViewModel.addMessage(messageContent, true, Cmd, SeqId, Round);
+          
           if (Data) {
             try {
               const dataStr = typeof Data === 'string' ? Data : JSON.stringify(Data, null, 2);
-              this.displayMessage(`Data: ${dataStr}`, false);
+              this.messageViewModel.addMessage(`Data: ${dataStr}`, false, Cmd, SeqId, Round, Data);
             } catch (error) {
-              this.displayMessage(`数据内容解析失败: ${String(Data)}`, false);
+              this.messageViewModel.addMessage(`数据内容解析失败: ${String(Data)}`, false, Cmd, SeqId, Round);
             }
           }
         } catch (error) {
@@ -295,49 +378,111 @@ export class ZegoClient {
         }
       }
     });
+    
     // 启用 onRecvRoomChannelMessage 实验性 API
     this.zg.callExperimentalAPI({ method: "onRecvRoomChannelMessage", params: {} });
+    
+    // 初始化消息视图
+    this.initializeMessageView();
   }
 
   /**
-   * 在消息展示区域显示消息
-   * @param content 消息内容
-   * @param showTimestamp 是否显示时间戳（默认显示）
+   * 初始化消息视图
    */
-  private displayMessage(content: string, showTimestamp: boolean = true): void {
+  public initializeMessageView(): void {
+    // 确保在浏览器环境中运行
+    if (typeof document !== 'undefined') {
+      // 初始化消息过滤输入框
+      const filterInput = document.getElementById('messageFilterInput') as HTMLInputElement;
+      if (filterInput) {
+        filterInput.addEventListener('input', (event) => {
+          const target = event.target as HTMLInputElement;
+          this.messageViewModel.setFilterKeyword(target.value);
+        });
+      }
+
+      // 添加消息视图模型的观察者
+      this.messageViewModel.addObserver(() => {
+        this.renderMessages();
+      });
+
+      // 添加系统初始化消息
+      this.messageViewModel.addMessage('消息展示区域已初始化', true);
+    }
+  }
+
+  /**
+   * 渲染过滤后的消息到视图
+   */
+  private renderMessages(): void {
     // 确保在浏览器环境中运行
     if (typeof document !== 'undefined') {
       const messageDisplay = document.getElementById('messageDisplay');
       if (messageDisplay) {
-        // 创建消息元素
-        const messageItem = document.createElement('div');
-        messageItem.className = 'message-item';
+        // 清空消息区域
+        messageDisplay.innerHTML = '';
 
-        // 格式化当前时间
-        const now = new Date();
-        const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+        // 获取过滤后的消息和当前过滤关键字
+        const filteredMessages = this.messageViewModel.getFilteredMessages();
+        // 注意：由于MessageViewModel中filterKeyword是私有属性，我们需要获取过滤输入框的值
+        const filterKeyword = document.getElementById('messageFilterInput') as HTMLInputElement;
+        const keyword = filterKeyword ? filterKeyword.value.toLowerCase().trim() : '';
 
-        // 设置消息内容
-        if (showTimestamp) {
-          messageItem.innerHTML = `
-            <span class="timestamp">${timestamp}</span>
-            <span class="content">${content}</span>
-          `;
-        } else {
-          // 为数据内容设置缩进，使其在视觉上更易读
-          messageItem.innerHTML = `
-            <span class="timestamp"></span>
-            <span class="content" style="margin-left: 20px;">${content}</span>
-          `;
-        }
+        // 渲染消息
+        filteredMessages.forEach(message => {
+          const messageItem = document.createElement('div');
+          messageItem.className = message.content.includes('消息展示区域已初始化') ? 'message-item system-message' : 'message-item';
 
-        // 添加消息到展示区域
-        messageDisplay.appendChild(messageItem);
+          // 高亮显示匹配的字符
+          let formattedContent = message.content;
+          if (keyword) {
+            try {
+              // 创建一个正则表达式，使用全局匹配和不区分大小写
+              const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+              // 使用高亮标签替换匹配的文本
+              formattedContent = message.content.replace(regex, '<span class="highlight">$1</span>');
+            } catch (error) {
+              console.error('创建正则表达式失败:', error);
+            }
+          }
+
+          // 设置消息内容
+          if (message.showTimestamp) {
+            messageItem.innerHTML = `
+              <span class="timestamp">${message.timestamp}</span>
+              <span class="content">${formattedContent}</span>
+            `;
+          } else {
+            // 为数据内容设置缩进，使其在视觉上更易读
+            messageItem.innerHTML = `
+              <span class="timestamp"></span>
+              <span class="content" style="margin-left: 20px;">${formattedContent}</span>
+            `;
+          }
+
+          // 添加消息到展示区域
+          messageDisplay.appendChild(messageItem);
+        });
 
         // 自动滚动到最新消息
         messageDisplay.scrollTop = messageDisplay.scrollHeight;
       }
     }
+  }
+
+  /**
+   * 设置消息过滤关键字
+   * @param keyword 过滤关键字
+   */
+  public setMessageFilter(keyword: string): void {
+    this.messageViewModel.setFilterKeyword(keyword);
+  }
+
+  /**
+   * 清空所有消息
+   */
+  public clearMessages(): void {
+    this.messageViewModel.clearMessages();
   }
 
   /**

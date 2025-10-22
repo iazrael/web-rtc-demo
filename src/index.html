@@ -17,6 +17,7 @@
 
     .videoRow {
       margin-top: 30px;
+      padding: 0 15px;
     }
 
     #previewLabel {
@@ -32,7 +33,7 @@
     button.btn {
       width: 160px;
     }
-    
+
     /* 配置参数弹窗样式 */
     .config-modal {
       display: none;
@@ -45,7 +46,7 @@
       z-index: 1000;
       overflow-y: auto;
     }
-    
+
     .config-modal-content {
       background-color: white;
       margin: 10% auto;
@@ -56,12 +57,19 @@
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
       animation: slideDown 0.3s ease-out;
     }
-    
+
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    
+
     .close-btn {
       color: #aaa;
       float: right;
@@ -69,44 +77,44 @@
       font-weight: bold;
       cursor: pointer;
     }
-    
+
     .close-btn:hover,
     .close-btn:focus {
       color: black;
       text-decoration: none;
     }
-    
+
     .header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20px;
     }
-    
+
     .save-status {
       font-size: 12px;
       color: #28a745;
       margin-left: 10px;
     }
-    
+
     .form-group {
       margin-bottom: 15px;
     }
-    
+
     .form-control {
       margin-top: 5px;
     }
-    
+
     .form-row {
       display: flex;
       gap: 15px;
       margin-bottom: 15px;
     }
-    
-    .form-row > div {
+
+    .form-row>div {
       flex: 1;
     }
-    
+
     .config-toggle {
       background-color: #17a2b8;
       color: white;
@@ -117,20 +125,36 @@
       font-size: 14px;
       transition: background-color 0.3s;
     }
-    
+
     .config-toggle:hover {
       background-color: #138496;
     }
-    
+
     .config-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    
+
     textarea.form-control {
       resize: vertical;
       min-height: 80px;
+    }
+
+    .message-filter-container {
+      padding: 5px 0;
+    }
+    .clear-filter-btn {
+      font-size: 20px;
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      display: none;
     }
   </style>
   <title class="assistDevPageTitle">推拉流基础功能</title>
@@ -196,12 +220,22 @@
           <!-- <video  autoplay muted playsinline></video> -->
         </div>
       </div>
-      
+
       <!-- 消息展示区域 -->
       <div class="row" style="margin-top: 20px;">
         <div class="col-sm-12">
           <div style="background-color: #f8f9fa; border-radius: 5px; border: 1px solid #e9ecef; padding: 10px;">
             <h5 style="margin-top: 0; margin-bottom: 10px; color: #495057;">消息日志</h5>
+            <div class="message-filter-container">
+              <div style="position: relative;">
+                <input type="text" id="messageFilterInput" placeholder="输入关键词过滤消息..." class="form-control"
+                  style="padding-right: 30px;" />
+                <button type="button" id="clearFilterBtn" class="clear-filter-btn"
+                  style="">
+                  &times;
+                </button>
+              </div>
+            </div>
             <div id="messageDisplay" style="
               height: 300px;
               background-color: white;
@@ -220,7 +254,7 @@
           </div>
         </div>
       </div>
-      
+
       <style>
         .message-item {
           margin-bottom: 8px;
@@ -229,31 +263,46 @@
           background-color: #f8f9fa;
           border-left: 4px solid #007bff;
         }
+
         .system-message {
           background-color: #e9ecef;
           border-left-color: #6c757d;
         }
+
         .message-item .timestamp {
           font-weight: bold;
           color: #6c757d;
           font-size: 12px;
           margin-right: 5px;
         }
+
         .message-item .content {
           color: #212529;
           word-break: break-all;
         }
+
+        .message-item .highlight {
+          background-color: #ffeb3b;
+          color: #212529;
+          padding: 0 2px;
+          border-radius: 2px;
+          font-weight: bold;
+        }
+
         #messageDisplay::-webkit-scrollbar {
           width: 8px;
         }
+
         #messageDisplay::-webkit-scrollbar-track {
           background: #f1f1f1;
           border-radius: 4px;
         }
+
         #messageDisplay::-webkit-scrollbar-thumb {
           background: #c1c1c1;
           border-radius: 4px;
         }
+
         #messageDisplay::-webkit-scrollbar-thumb:hover {
           background: #a8a8a8;
         }
@@ -269,15 +318,16 @@
         <h3>导入配置</h3>
         <span class="close-btn" id="closeImportModal">&times;</span>
       </div>
-      
+
       <div class="form-group">
         <label for="jsonConfigInput"><strong>JSON配置</strong></label>
-        <textarea class="form-control" id="jsonConfigInput" placeholder="请粘贴JSON配置内容" style="min-height: 300px;"></textarea>
+        <textarea class="form-control" id="jsonConfigInput" placeholder="请粘贴JSON配置内容"
+          style="min-height: 300px;"></textarea>
         <small class="form-text text-muted">请输入符合格式要求的JSON字符串，将自动提取所需配置项</small>
       </div>
-      
+
       <div id="importStatus" style="display: none; margin-bottom: 15px; padding: 10px; border-radius: 4px;"></div>
-      
+
       <div style="text-align: right; margin-top: 20px;">
         <button type="button" id="cancelImport" class="btn btn-secondary">取消</button>
         <button type="button" id="confirmImport" class="btn btn-primary" style="margin-left: 10px;">确认导入</button>
@@ -293,18 +343,18 @@
         <span class="close-btn" id="closeConfigModal">&times;</span>
       </div>
       <div id="saveStatus" class="save-status" style="display: none;">已保存</div>
-      
+
       <form id="configForm">
         <div class="form-group">
           <label for="configAppId"><strong>AppID</strong></label>
           <input type="text" class="form-control" id="configAppId" placeholder="请输入AppID">
         </div>
-        
+
         <div class="form-group">
           <label for="configSecret"><strong>Secret</strong></label>
           <input type="password" class="form-control" id="configSecret" placeholder="请输入Secret密钥">
         </div>
-        
+
         <div class="form-row">
           <div>
             <label for="configUserId"><strong>UserID</strong></label>
@@ -315,24 +365,24 @@
             <input type="text" class="form-control" id="configRoomId" placeholder="请输入RoomID">
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="configStreamId"><strong>StreamID</strong></label>
           <input type="text" class="form-control" id="configStreamId" placeholder="请输入StreamID">
         </div>
-        
 
-        
+
+
         <div class="form-group">
           <label for="configEffectiveTime"><strong>有效时间（秒）</strong></label>
           <input type="number" class="form-control" id="configEffectiveTime" placeholder="Token有效时间" value="3600">
         </div>
-        
+
         <div class="form-group">
           <label for="configPayload"><strong>Payload（可选）</strong></label>
           <textarea class="form-control" id="configPayload" placeholder="请输入自定义Payload JSON"></textarea>
         </div>
-        
+
         <div style="text-align: right; margin-top: 20px;">
           <button type="button" id="closeConfig" class="btn btn-secondary">关闭</button>
           <button type="button" id="applyConfig" class="btn btn-primary" style="margin-left: 10px;">应用设置</button>
@@ -342,105 +392,120 @@
   </div>
 
   <script>
-        // 显示配置弹窗
-        function showConfigModal() {
-            document.getElementById('configModal').style.display = 'block';
-        }
+    // 显示配置弹窗
+    function showConfigModal() {
+      document.getElementById('configModal').style.display = 'block';
+    }
 
-        // 隐藏配置弹窗
-        function hideConfigModal() {
-            document.getElementById('configModal').style.display = 'none';
+    // 隐藏配置弹窗
+    function hideConfigModal() {
+      document.getElementById('configModal').style.display = 'none';
+    }
+
+    // 导入配置弹窗控制和功能
+    document.addEventListener('DOMContentLoaded', function () {
+      // 配置弹窗控制
+      const configModal = document.getElementById('configModal');
+      const configToggle = document.getElementById('configToggle');
+      const closeBtn = document.getElementById('closeConfigModal');
+      const closeConfig = document.getElementById('closeConfig');
+
+      configToggle.addEventListener('click', () => {
+        configModal.style.display = 'block';
+      });
+
+      closeBtn.addEventListener('click', hideConfigModal);
+      closeConfig.addEventListener('click', hideConfigModal);
+
+      // 点击弹窗外部关闭
+      window.addEventListener('click', (event) => {
+        if (event.target === configModal) {
+          hideConfigModal();
         }
-        
-        // 导入配置弹窗控制和功能
-        document.addEventListener('DOMContentLoaded', function() {
-            // 配置弹窗控制
-            const configModal = document.getElementById('configModal');
-            const configToggle = document.getElementById('configToggle');
-            const closeBtn = document.getElementById('closeConfigModal');
-            const closeConfig = document.getElementById('closeConfig');
-            
-            configToggle.addEventListener('click', () => {
-                configModal.style.display = 'block';
-            });
-            
-            closeBtn.addEventListener('click', hideConfigModal);
-            closeConfig.addEventListener('click', hideConfigModal);
-            
-            // 点击弹窗外部关闭
-            window.addEventListener('click', (event) => {
-                if (event.target === configModal) {
-                    hideConfigModal();
-                }
-            });
-            
-            // 导入配置弹窗控制
-            const importConfigModal = document.getElementById('importConfigModal');
-            const importConfigToggle = document.getElementById('importConfigToggle');
-            const closeImportModal = document.getElementById('closeImportModal');
-            const cancelImport = document.getElementById('cancelImport');
-            const confirmImport = document.getElementById('confirmImport');
-            const jsonConfigInput = document.getElementById('jsonConfigInput');
-            const importStatus = document.getElementById('importStatus');
-            
-            function showImportModal() {
-                importConfigModal.style.display = 'block';
-                importStatus.style.display = 'none';
-                jsonConfigInput.value = '';
-            }
-            
-            function hideImportModal() {
-                importConfigModal.style.display = 'none';
-            }
-            
-            function showImportStatus(message, isError = false) {
-                importStatus.textContent = message;
-                importStatus.className = isError ? 'alert alert-danger' : 'alert alert-success';
-                importStatus.style.display = 'block';
-            }
-            
-            importConfigToggle.addEventListener('click', showImportModal);
-            closeImportModal.addEventListener('click', hideImportModal);
-            cancelImport.addEventListener('click', hideImportModal);
-            
-            // 点击弹窗外部关闭
-            window.addEventListener('click', (event) => {
-                if (event.target === importConfigModal) {
-                    hideImportModal();
-                }
-            });
-            
-            // 确认导入配置
-            confirmImport.addEventListener('click', async () => {
-                try {
-                    const jsonStr = jsonConfigInput.value.trim();
-                    if (!jsonStr) {
-                        showImportStatus('请输入JSON配置内容', true);
-                        return;
-                    }
-                    
-                    // 调用导入配置功能
-                    const success = await window.importConfigFromJson(jsonStr);
-                    
-                    if (success) {
-                        showImportStatus('配置导入成功');
-                        // 刷新配置表单
-                        setTimeout(() => {
-                            hideImportModal();
-                            // 如果配置弹窗已打开，刷新其中的数据
-                            if (configModal.style.display === 'block') {
-                                window.refreshConfigForm();
-                            }
-                        }, 1500);
-                    } else {
-                        showImportStatus('配置导入失败，请检查JSON格式', true);
-                    }
-                } catch (error) {
-                    showImportStatus('处理配置时发生错误: ' + error.message, true);
-                }
-            });
-        });
-    </script>
+      });
+
+      // 导入配置弹窗控制
+      const importConfigModal = document.getElementById('importConfigModal');
+      const importConfigToggle = document.getElementById('importConfigToggle');
+      const closeImportModal = document.getElementById('closeImportModal');
+      const cancelImport = document.getElementById('cancelImport');
+      const confirmImport = document.getElementById('confirmImport');
+      const jsonConfigInput = document.getElementById('jsonConfigInput');
+      const importStatus = document.getElementById('importStatus');
+
+      function showImportModal() {
+        importConfigModal.style.display = 'block';
+        importStatus.style.display = 'none';
+        jsonConfigInput.value = '';
+      }
+
+      function hideImportModal() {
+        importConfigModal.style.display = 'none';
+      }
+
+      function showImportStatus(message, isError = false) {
+        importStatus.textContent = message;
+        importStatus.className = isError ? 'alert alert-danger' : 'alert alert-success';
+        importStatus.style.display = 'block';
+      }
+
+      importConfigToggle.addEventListener('click', showImportModal);
+      closeImportModal.addEventListener('click', hideImportModal);
+      cancelImport.addEventListener('click', hideImportModal);
+
+      // 点击弹窗外部关闭
+      window.addEventListener('click', (event) => {
+        if (event.target === importConfigModal) {
+          hideImportModal();
+        }
+      });
+
+      // 确认导入配置
+      confirmImport.addEventListener('click', async () => {
+        try {
+          const jsonStr = jsonConfigInput.value.trim();
+          if (!jsonStr) {
+            showImportStatus('请输入JSON配置内容', true);
+            return;
+          }
+
+          // 调用导入配置功能
+          const success = await window.importConfigFromJson(jsonStr);
+
+          if (success) {
+            showImportStatus('配置导入成功');
+            // 刷新配置表单
+            setTimeout(() => {
+              hideImportModal();
+              // 如果配置弹窗已打开，刷新其中的数据
+              if (configModal.style.display === 'block') {
+                window.refreshConfigForm();
+              }
+            }, 1500);
+          } else {
+            showImportStatus('配置导入失败，请检查JSON格式', true);
+          }
+        } catch (error) {
+          showImportStatus('处理配置时发生错误: ' + error.message, true);
+        }
+      });
+
+      const filterInput = document.getElementById('messageFilterInput');
+      const clearBtn = document.getElementById('clearFilterBtn');
+
+      filterInput.addEventListener('input', function () {
+        clearBtn.style.display = this.value ? 'block' : 'none';
+      });
+
+      clearBtn.addEventListener('click', function () {
+        filterInput.value = '';
+        clearBtn.style.display = 'none';
+        // 触发input事件以更新过滤结果
+        filterInput.dispatchEvent(new Event('input'));
+      });
+
+    });
+  </script>
 
 </body>
 
