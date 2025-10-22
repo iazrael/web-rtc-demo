@@ -196,6 +196,68 @@
           <!-- <video  autoplay muted playsinline></video> -->
         </div>
       </div>
+      
+      <!-- 消息展示区域 -->
+      <div class="row" style="margin-top: 20px;">
+        <div class="col-sm-12">
+          <div style="background-color: #f8f9fa; border-radius: 5px; border: 1px solid #e9ecef; padding: 10px;">
+            <h5 style="margin-top: 0; margin-bottom: 10px; color: #495057;">消息日志</h5>
+            <div id="messageDisplay" style="
+              height: 300px;
+              background-color: white;
+              border: 1px solid #dee2e6;
+              border-radius: 4px;
+              padding: 10px;
+              overflow-y: auto;
+              font-family: monospace;
+              font-size: 14px;
+            ">
+              <!-- 消息将在这里动态显示 -->
+              <div class="message-item system-message">
+                <span class="timestamp">系统</span>: 消息展示区域已初始化
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .message-item {
+          margin-bottom: 8px;
+          padding: 5px 10px;
+          border-radius: 4px;
+          background-color: #f8f9fa;
+          border-left: 4px solid #007bff;
+        }
+        .system-message {
+          background-color: #e9ecef;
+          border-left-color: #6c757d;
+        }
+        .message-item .timestamp {
+          font-weight: bold;
+          color: #6c757d;
+          font-size: 12px;
+          margin-right: 5px;
+        }
+        .message-item .content {
+          color: #212529;
+          word-break: break-all;
+        }
+        #messageDisplay::-webkit-scrollbar {
+          width: 8px;
+        }
+        #messageDisplay::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+        #messageDisplay::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 4px;
+        }
+        #messageDisplay::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
+        }
+      </style>
     </div>
 
   </div>

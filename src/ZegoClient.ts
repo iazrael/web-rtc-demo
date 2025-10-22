@@ -257,6 +257,17 @@ export class ZegoClient {
           const recvMsg = JSON.parse(content.msgContent);
           const { Cmd, SeqId, Data, Round } = recvMsg;
           console.log('recvMsg', recvMsg);
+          
+          // 显示消息到消息展示区域
+          this.displayMessage(`命令: ${Cmd}, 序列号: ${SeqId}, 轮次: ${Round || '-'}`);
+          if (Data) {
+            try {
+              const dataStr = typeof Data === 'string' ? Data : JSON.stringify(Data, null, 2);
+              this.displayMessage(`数据内容: ${dataStr}`, false);
+            } catch (error) {
+              this.displayMessage(`数据内容解析失败: ${String(Data)}`, false);
+            }
+          }
         } catch (error) {
           console.error("解析消息失败:", error);
         }
@@ -266,6 +277,47 @@ export class ZegoClient {
     this.zg.callExperimentalAPI({ method: "onRecvRoomChannelMessage", params: {} });
   }
 
+  /**
+   * 在消息展示区域显示消息
+   * @param content 消息内容
+   * @param showTimestamp 是否显示时间戳（默认显示）
+   */
+  private displayMessage(content: string, showTimestamp: boolean = true): void {
+    // 确保在浏览器环境中运行
+    if (typeof document !== 'undefined') {
+      const messageDisplay = document.getElementById('messageDisplay');
+      if (messageDisplay) {
+        // 创建消息元素
+        const messageItem = document.createElement('div');
+        messageItem.className = 'message-item';
+        
+        // 格式化当前时间
+        const now = new Date();
+        const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+        
+        // 设置消息内容
+        if (showTimestamp) {
+          messageItem.innerHTML = `
+            <span class="timestamp">${timestamp}</span>
+            <span class="content">${content}</span>
+          `;
+        } else {
+          // 为数据内容设置缩进，使其在视觉上更易读
+          messageItem.innerHTML = `
+            <span class="timestamp"></span>
+            <span class="content" style="margin-left: 55px;">${content}</span>
+          `;
+        }
+        
+        // 添加消息到展示区域
+        messageDisplay.appendChild(messageItem);
+        
+        // 自动滚动到最新消息
+        messageDisplay.scrollTop = messageDisplay.scrollHeight;
+      }
+    }
+  }
+  
   /**
    * 登录房间
    */
