@@ -1,4 +1,5 @@
 import ZegoClient from './ZegoClient';
+import ConfigManager, { AppConfig } from './assets/ConfigManager';
 import VConsole from 'vconsole';
 import $ from 'jquery';
 import './assets/bootstrap.min';
@@ -19,31 +20,23 @@ let isLogin = false;
 let server = 'wss://accesshub-wss.zego.im/accesshub';
 let tokenUrl = '/api/token';
 
-// 从localStorage加载配置并设置到表单中
+// 从ConfigManager加载配置并设置到表单中
 function initializeWithStoredConfig(): void {
   try {
-    // 尝试从localStorage获取配置
-    const storedAppId = localStorage.getItem('configAppId');
-    const storedUserId = localStorage.getItem('configUserId');
-    const storedRoomId = localStorage.getItem('configRoomId');
-    const storedStreamId = localStorage.getItem('configStreamId');
-    
-    // 设置默认值（如果localStorage中有则使用localStorage的值）
-    $('#userId').val(storedUserId || 'sample' + new Date().getTime());
-    $('#streamId').val(storedStreamId || 'web-' + new Date().getTime());
-    
-    if (storedAppId) {
-      $('#appId').val(storedAppId);
+    // 从ConfigManager获取配置
+    let config = ConfigManager.loadConfigFromStorage();
+
+    // 如果没有配置或者配置不完整，生成默认配置并保存
+    const validation = ConfigManager.validateConfig(config);
+    if (!validation.isValid) {
+      const defaultConfig = ConfigManager.generateDefaultConfig();
+      // 合并默认配置到现有配置
+      config = { ...defaultConfig, ...config };
+      ConfigManager.saveConfigToStorage(config);
     }
-    
-    if (storedRoomId) {
-      $('#roomId').val(storedRoomId);
-    }
+
   } catch (error) {
     console.error('Failed to initialize with stored config:', error);
-    // 如果出错，使用默认值
-    $('#userId').val('sample' + new Date().getTime());
-    $('#streamId').val('web-' + new Date().getTime());
   }
 }
 
@@ -53,10 +46,9 @@ $(async () => {
 
   // 初始化时从localStorage加载配置
   initializeWithStoredConfig();
-  
+
   // 监听配置参数应用事件
   window.addEventListener('configApplied', () => {
-    initializeWithStoredConfig();
     // 如果ZegoClient已经初始化，重新加载配置
     if (zegoClient) {
       zegoClient.reloadConfig();
@@ -82,7 +74,7 @@ function registerEventListeners(): void {
     try {
       await zegoClient!.publish({
         camera: {
-          video: true,
+          video: false,
           audio: true
         }
       });
@@ -103,8 +95,8 @@ function registerEventListeners(): void {
   // 退出房间按钮点击事件
   $('#leaveRoom').click(async () => {
     if (!isLogin || !zegoClient) return;
-
-    const roomId = $('#roomId').val() as string;
+    const config = ConfigManager.loadConfigFromStorage();
+    const roomId = config.roomId || '';
     try {
       await zegoClient.logoutFromRoom(roomId);
       isLogin = false;
@@ -116,9 +108,10 @@ function registerEventListeners(): void {
 
   // 打开房间按钮点击事件
   $('#openRoom').click(async () => {
-    const currentId = $('#appId').val() as string;
+    const config = ConfigManager.loadConfigFromStorage();
+    const currentId = config.appId
     if (!currentId) {
-      alert('AppID is empty'); 
+      alert('AppID is empty');
       return;
     } else if (isNaN(Number(currentId))) {
       alert('AppID must be number');
@@ -132,10 +125,9 @@ function registerEventListeners(): void {
 
     try {
       const appID = Number(currentId);
-      const roomId = $('#roomId').val() as string;
-      const userID = $('#userId').val() as string;
-      const userName = 'sampleUser' + new Date().getTime();
-      const token = ($("#token").val() || "") as string;
+      const roomId = config.roomId || '';
+      const userID = config.userId || '';
+      const userName = config.userId || 'sampleUser' + new Date().getTime();
 
       // 重新初始化SDK如果appID有变化
       if (!zegoClient || zegoClient.getUserInfo().userID !== userID) {
@@ -145,12 +137,18 @@ function registerEventListeners(): void {
         }
 
         // 创建新实例
-          zegoClient = new ZegoClient({
-            appID,
+        zegoClient = new ZegoClient({
+          appID,
           server,
           tokenUrl,
-            debug
-          });
+          secret: config.secret || '',
+          userId: userID,
+          roomId,
+          streamId: config.streamId || '',
+          effectiveTime: parseInt(config.effectiveTime || '3600', 10),
+          payload: config.payload || '',
+          debug
+        });
 
         // 设置预览视频元素和用户信息
         zegoClient.setPreviewVideo(previewVideo);
@@ -169,7 +167,7 @@ function registerEventListeners(): void {
       }
 
       // 登录房间
-      isLogin = await zegoClient.loginToRoom(roomId, token, { userID, userName });
+      isLogin = await zegoClient.loginToRoom(roomId, '', { userID, userName });
 
       if (isLogin) {
         alert('Login Success!');
@@ -233,6 +231,78 @@ window.addEventListener('beforeunload', () => {
 
 // 为HTML中的applyConfig按钮添加额外的事件监听，确保触发配置应用事件
 $(document).on('click', '#applyConfig', () => {
+  // 从表单收集配置并保存到ConfigManager
+  const config: AppConfig = {
+    appId: (document.getElementById('configAppId') as HTMLInputElement)?.value || '',
+    secret: (document.getElementById('configSecret') as HTMLInputElement)?.value || '',
+    userId: (document.getElementById('configUserId') as HTMLInputElement)?.value || '',
+    roomId: (document.getElementById('configRoomId') as HTMLInputElement)?.value || '',
+    streamId: (document.getElementById('configStreamId') as HTMLInputElement)?.value || '',
+    effectiveTime: (document.getElementById('configEffectiveTime') as HTMLInputElement)?.value || '',
+    payload: (document.getElementById('configPayload') as HTMLTextAreaElement)?.value || ''
+  };
+
+  // 保存配置
+  ConfigManager.saveConfigToStorage(config);
+
+  // 显示保存成功提示
+  const saveStatus = document.getElementById('saveStatus');
+  if (saveStatus) {
+    saveStatus.style.display = 'inline';
+    setTimeout(() => {
+      saveStatus.style.display = 'none';
+    }, 2000);
+  }
+
+  // 隐藏弹窗
+  const hideConfigModal = (window as any).hideConfigModal;
+  if (typeof hideConfigModal === 'function') {
+    hideConfigModal();
+  }
+
   // 触发配置应用事件
   window.dispatchEvent(new CustomEvent('configApplied'));
 });
+
+// 配置表单定时保存
+let saveTimer: NodeJS.Timeout;
+const configForm = document.getElementById('configForm');
+if (configForm) {
+  configForm.addEventListener('input', () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      // 收集并保存当前配置
+      const config: AppConfig = {
+        appId: (document.getElementById('configAppId') as HTMLInputElement)?.value || '',
+        secret: (document.getElementById('configSecret') as HTMLInputElement)?.value || '',
+        userId: (document.getElementById('configUserId') as HTMLInputElement)?.value || '',
+        roomId: (document.getElementById('configRoomId') as HTMLInputElement)?.value || '',
+        streamId: (document.getElementById('configStreamId') as HTMLInputElement)?.value || '',
+        effectiveTime: (document.getElementById('configEffectiveTime') as HTMLInputElement)?.value || '',
+        payload: (document.getElementById('configPayload') as HTMLTextAreaElement)?.value || ''
+      };
+      ConfigManager.saveConfigToStorage(config);
+    }, 1000); // 1秒后自动保存
+  });
+}
+
+// 打开配置弹窗时，加载当前配置到表单
+const configToggle = document.getElementById('configToggle');
+if (configToggle) {
+  configToggle.addEventListener('click', () => {
+    const config = ConfigManager.loadConfigFromStorage();
+    if (config.appId) (document.getElementById('configAppId') as HTMLInputElement).value = config.appId;
+    if (config.secret) (document.getElementById('configSecret') as HTMLInputElement).value = config.secret;
+    if (config.userId) (document.getElementById('configUserId') as HTMLInputElement).value = config.userId;
+    if (config.roomId) (document.getElementById('configRoomId') as HTMLInputElement).value = config.roomId;
+    if (config.streamId) (document.getElementById('configStreamId') as HTMLInputElement).value = config.streamId;
+    if (config.effectiveTime) (document.getElementById('configEffectiveTime') as HTMLInputElement).value = config.effectiveTime;
+    if (config.payload) (document.getElementById('configPayload') as HTMLTextAreaElement).value = config.payload;
+
+    // 显示弹窗
+    const showConfigModal = (window as any).showConfigModal;
+    if (typeof showConfigModal === 'function') {
+      showConfigModal();
+    }
+  });
+}

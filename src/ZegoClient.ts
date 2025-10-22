@@ -1,5 +1,6 @@
 import { ZegoExpressEngine } from 'zego-express-engine-webrtc';
 import { ZegoUser } from 'zego-express-engine-webrtc/sdk/src/common/zego.entity';
+import ConfigManager from './assets/ConfigManager';
 import $ from 'jquery';
 import { getBrowser } from './assets/utils';
 
@@ -48,7 +49,13 @@ export interface PublishOption {
 export interface ZegoClientOptions {
   appID: number;
   server: string;
+  secret: string;
   tokenUrl: string;
+  userId: string;
+  roomId: string;
+  streamId: string;
+  effectiveTime: number;
+  payload?: string;
   debug?: boolean;
 }
 
@@ -59,7 +66,7 @@ export class ZegoClient {
   private tokenUrl: string;
   private secret: string = '';
   private effectiveTimeInSeconds: number = 3600;
-  private payload: string = '{}';
+  private payload: string = '';
   private isInRoom = false;
   private publishStreamId = '';
   private userID = '';
@@ -74,39 +81,23 @@ export class ZegoClient {
   constructor(options: ZegoClientOptions) {
     this.appID = options.appID;
     this.server = options.server;
+    this.secret = options.secret;
     this.tokenUrl = options.tokenUrl;
-    this.userID = 'sample' + new Date().getTime();
-    this.userName = 'sampleUser' + new Date().getTime();
-    this.publishStreamId = 'webrtc' + new Date().getTime();
-
-    // 从localStorage加载配置
-    this.loadConfigFromStorage();
-  }
-
-  /**
-   * 从localStorage加载配置
-   */
-  private loadConfigFromStorage(): void {
-    try {
-      const configSecret = localStorage.getItem('configSecret');
-      const configEffectiveTime = localStorage.getItem('configEffectiveTime');
-      const configPayload = localStorage.getItem('configPayload');
-      const configAppId = localStorage.getItem('configAppId');
-
-      if (configSecret) this.secret = configSecret;
-      if (configEffectiveTime) this.effectiveTimeInSeconds = parseInt(configEffectiveTime, 10) || 3600;
-      if (configPayload) this.payload = configPayload;
-      if (configAppId) this.appID = parseInt(configAppId, 10) || this.appID;
-    } catch (error) {
-      console.error('Failed to load config from localStorage:', error);
+    this.userID = options.userId;
+    this.userName = options.userId;
+    this.publishStreamId = options.streamId;
+    if (options.effectiveTime) {
+      this.effectiveTimeInSeconds = options.effectiveTime || 3600;
     }
+    this.payload = options.payload || '';
   }
+
 
   /**
    * 重新加载配置
    */
   reloadConfig(): void {
-    this.loadConfigFromStorage();
+    // this.loadConfigFromStorage();
   }
 
   /**
@@ -336,8 +327,6 @@ export class ZegoClient {
    * 从服务器获取token
    */
   private async getTokenFromServer(userID: string): Promise<string> {
-    // 确保使用最新配置
-    this.loadConfigFromStorage();
 
     // 构建请求参数，包含所有必要字段
     const requestData: any = {
@@ -377,7 +366,8 @@ export class ZegoClient {
       }
 
       const data = await response.json();
-      return data.token;
+      console.log('Received token:', data.data.token);
+      return data.data.token;
     } catch (error) {
       console.error('Failed to get token from server:', error);
       throw error;

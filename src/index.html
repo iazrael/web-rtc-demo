@@ -254,88 +254,38 @@
   </div>
 
   <script>
-    // 配置参数弹窗相关逻辑
-    const configModal = document.getElementById('configModal');
-    const configToggle = document.getElementById('configToggle');
-    const closeBtn = document.querySelector('.close-btn');
-    const closeConfig = document.getElementById('closeConfig');
-    const applyConfig = document.getElementById('applyConfig');
-    const configForm = document.getElementById('configForm');
-    const saveStatus = document.getElementById('saveStatus');
-    
-    // 配置项
-    const configFields = [
-      'configAppId', 'configSecret', 'configUserId', 'configRoomId', 
-      'configStreamId', 'configEffectiveTime', 'configPayload'
-    ];
-    
-    // 从localStorage加载配置
-    function loadConfigFromStorage() {
-      configFields.forEach(fieldId => {
-        const value = localStorage.getItem(fieldId);
-        if (value && document.getElementById(fieldId)) {
-          document.getElementById(fieldId).value = value;
+        // 显示配置弹窗
+        function showConfigModal() {
+            document.getElementById('configModal').style.display = 'block';
         }
-      });
-    }
-    
-    // 保存配置到localStorage
-    function saveConfigToStorage() {
-      configFields.forEach(fieldId => {
-        const element = document.getElementById(fieldId);
-        if (element && element.value) {
-          localStorage.setItem(fieldId, element.value);
+
+        // 隐藏配置弹窗
+        function hideConfigModal() {
+            document.getElementById('configModal').style.display = 'none';
         }
-      });
-      
-      // 显示保存成功提示
-      saveStatus.style.display = 'inline';
-      setTimeout(() => {
-        saveStatus.style.display = 'none';
-      }, 2000);
-    }
-    
-    // 定时保存配置
-    let saveTimer;
-    configForm.addEventListener('input', () => {
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveConfigToStorage, 1000); // 1秒后自动保存
-    });
-    
-    // 应用设置按钮
-    applyConfig.addEventListener('click', () => {
-      saveConfigToStorage();
-      configModal.style.display = 'none';
-      
-    });
-    
-    // 打开弹窗
-    configToggle.addEventListener('click', () => {
-      loadConfigFromStorage();
-      configModal.style.display = 'block';
-    });
-    
-    // 关闭弹窗
-    closeBtn.addEventListener('click', () => {
-      configModal.style.display = 'none';
-    });
-    
-    closeConfig.addEventListener('click', () => {
-      configModal.style.display = 'none';
-    });
-    
-    // 点击弹窗外部关闭
-    window.addEventListener('click', (event) => {
-      if (event.target === configModal) {
-        configModal.style.display = 'none';
-      }
-    });
-    
-    // 页面加载时加载配置
-    window.addEventListener('DOMContentLoaded', () => {
-      loadConfigFromStorage();
-    });
-  </script>
+        
+        // 简单的弹窗控制
+        document.addEventListener('DOMContentLoaded', function() {
+            const configModal = document.getElementById('configModal');
+            const configToggle = document.getElementById('configToggle');
+            const closeBtn = document.querySelector('.close-btn');
+            const closeConfig = document.getElementById('closeConfig');
+            
+            configToggle.addEventListener('click', () => {
+                configModal.style.display = 'block';
+            });
+            
+            closeBtn.addEventListener('click', hideConfigModal);
+            closeConfig.addEventListener('click', hideConfigModal);
+            
+            // 点击弹窗外部关闭
+            window.addEventListener('click', (event) => {
+                if (event.target === configModal) {
+                    hideConfigModal();
+                }
+            });
+        });
+    </script>
 
 </body>
 

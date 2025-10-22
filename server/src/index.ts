@@ -24,6 +24,8 @@ app.post('/api/token', (req: Request, res: Response) => {
       payload
     } = req.body;
 
+    console.log('Request body:', req.body);
+
     // 验证必需参数
     if (!appId || !userId || !secret) {
       return res.status(400).json({
