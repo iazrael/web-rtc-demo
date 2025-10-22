@@ -2,9 +2,13 @@ import express, { Request, Response } from 'express';
 import path from 'path';
 import { execSync } from 'child_process';
 import { generateToken04 } from './zegoServerAssistant'
+import https from 'https';
+import fs from 'fs';
+import os from 'os';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const HTTP_PORT = process.env.HTTP_PORT || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 
 // 解析JSON请求体
 app.use(express.json());
@@ -77,15 +81,57 @@ function buildWebpack() {
   }
 }
 
-// 启动服务器
-function startServer() {
-  app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+// 启动HTTP服务器
+function startHttpServer() {
+  app.listen(HTTP_PORT, () => {
+    console.log(`HTTP Server is running on http://localhost:${HTTP_PORT}`);
     console.log(`Static files served from: ${staticDir}`);
-    console.log(`Token API: POST http://localhost:${PORT}/api/token`);
+    console.log(`Token API: POST http://localhost:${HTTP_PORT}/api/token`);
   });
+}
+
+// 启动HTTPS服务器
+function startHttpsServer() {
+  try {
+    // 尝试读取SSL证书和密钥
+    let privateKey, certificate;
+    const keyPath = process.env.SSL_KEY_PATH || path.join(__dirname, '../ssl/server.key');
+    const certPath = process.env.SSL_CERT_PATH || path.join(__dirname, '../ssl/server.crt');
+    
+    try {
+      privateKey = fs.readFileSync(keyPath, 'utf8');
+      certificate = fs.readFileSync(certPath, 'utf8');
+    } catch (error) {
+      console.warn('SSL certificates not found at specified paths. Using development certificates or falling back to HTTP.');
+      console.warn('To enable HTTPS, create SSL certificates and place them in server/ssl/ directory or set SSL_KEY_PATH and SSL_CERT_PATH environment variables.');
+      return false;
+    }
+    
+    const credentials = {
+      key: privateKey,
+      cert: certificate
+    };
+    
+    const httpsServer = https.createServer(credentials, app);
+    httpsServer.listen(HTTPS_PORT, () => {
+      console.log(`HTTPS Server is running on https://localhost:${HTTPS_PORT}`);
+      console.log(`Static files served from: ${staticDir}`);
+      console.log(`Token API: POST https://localhost:${HTTPS_PORT}/api/token`);
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to start HTTPS server:', error instanceof Error ? error.message : 'Unknown error');
+    return false;
+  }
 }
 
 // 先执行webpack编译，然后启动服务器
 // buildWebpack();
-startServer();
+
+// 尝试启动HTTPS服务器，如果失败则启动HTTP服务器
+const httpsStarted = startHttpsServer();
+if (!httpsStarted) {
+  console.log('Starting HTTP server as fallback...');
+  startHttpServer();
+}

@@ -1,15 +1,15 @@
 import ZegoClient from './ZegoClient';
 import ConfigManager, { AppConfig } from './assets/ConfigManager';
-import VConsole from 'vconsole';
+// import VConsole from 'vconsole';
 import $ from 'jquery';
 import './assets/bootstrap.min';
 import './assets/bootstrap.min.css';
 
-// 初始化VConsole
-const debug = true;
-if (debug) {
-  new VConsole();
-}
+// // 初始化VConsole
+const debug = false;
+// if (debug) {
+//   new VConsole();
+// }
 
 // 全局变量
 let zegoClient: ZegoClient | null = null;
