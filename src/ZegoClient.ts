@@ -247,23 +247,23 @@ export class ZegoClient {
         stream.type == 'push' && $('#soundLevel').html(Math.round(stream.soundLevel) + '');
       });
     });
-    // // 注意！！！：通过房间自定义消息收到的数据可能会乱序，需要根据 SeqId 字段进行排序。
-    // this.zg.on("recvExperimentalAPI", (result) => {
-    //   const { method, content } = result;
-    //   // !mark
-    //   if (method === "onRecvRoomChannelMessage") {
-    //     try {
-    //       // 解析消息
-    //       const recvMsg = JSON.parse(content.msgContent);
-    //       const { Cmd, SeqId, Data, Round } = recvMsg;
-    //     } catch (error) {
-    //       console.error("解析消息失败:", error);
-    //     }
-    //   }
-    // });
-    // // 启用 onRecvRoomChannelMessage 实验性 API
-    // // !mark
-    // this.zg.callExperimentalAPI({ method: "onRecvRoomChannelMessage", params: {} });
+    // 注意！！！：通过房间自定义消息收到的数据可能会乱序，需要根据 SeqId 字段进行排序。
+    this.zg.on("recvExperimentalAPI", (result) => {
+      const { method, content } = result;
+      // !mark
+      if (method === "onRecvRoomChannelMessage") {
+        try {
+          // 解析消息
+          const recvMsg = JSON.parse(content.msgContent);
+          const { Cmd, SeqId, Data, Round } = recvMsg;
+          console.log('recvMsg', recvMsg);
+        } catch (error) {
+          console.error("解析消息失败:", error);
+        }
+      }
+    });
+    // 启用 onRecvRoomChannelMessage 实验性 API
+    this.zg.callExperimentalAPI({ method: "onRecvRoomChannelMessage", params: {} });
   }
 
   /**
