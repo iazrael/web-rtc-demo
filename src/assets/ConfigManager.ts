@@ -173,10 +173,10 @@ class ConfigManager {
       // 配置字段映射，忽略大小写
       const fieldMap: ConfigFieldMap = {
         'appid': 'appId',
-        'serversecret': 'secret',
+        'secret': 'secret',
         'userid': 'userId',
         'roomid': 'roomId',
-        'userstreamid': 'streamId',
+        'streamid': 'streamId',
         'effectivetime': 'effectiveTime',
         'payload': 'payload'
       };
@@ -196,6 +196,12 @@ class ConfigManager {
           } else {
             standardConfig[standardKey] = String(parsedConfig[key]);
           }
+        } else if (lowerKey === 'serversecret') {
+          // 使用ServerSecret作为secret的值
+          standardConfig.secret = String(parsedConfig[key]);
+        }else if (lowerKey === 'userstreamid') {
+          // 使用userStreamId作为streamId的值
+          standardConfig.streamId = String(parsedConfig[key]);
         }
       });
       
