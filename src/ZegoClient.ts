@@ -255,7 +255,7 @@ export class ZegoClient {
         const { cmd, seq_id, round, data } = recvMsg;
         console.log('recvMsg', recvMsg);
         // 显示消息到消息展示区域
-        this.displayMessage(`[R]命令: ${cmd}, 序列号: ${seq_id || '-'}, 轮次: ${round || '-'}`);
+        this.displayMessage(`命令: ${cmd}, 序列号: ${seq_id || '-'}, 轮次: ${round || '-'}`);
         if (data) {
           try {
             const dataStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
@@ -281,7 +281,7 @@ export class ZegoClient {
           console.log('recvMsg', recvMsg);
 
           // 显示消息到消息展示区域
-          this.displayMessage(`[R]命令: ${Cmd}, 序列号: ${SeqId || '-'}, 轮次: ${Round || '-'}`);
+          this.displayMessage(`命令: ${Cmd}, 序列号: ${SeqId || '-'}, 轮次: ${Round || '-'}`);
           if (Data) {
             try {
               const dataStr = typeof Data === 'string' ? Data : JSON.stringify(Data, null, 2);
@@ -327,7 +327,7 @@ export class ZegoClient {
           // 为数据内容设置缩进，使其在视觉上更易读
           messageItem.innerHTML = `
             <span class="timestamp"></span>
-            <span class="content" style="margin-left: 30px;">${content}</span>
+            <span class="content" style="margin-left: 20px;">${content}</span>
           `;
         }
 
