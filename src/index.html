@@ -143,7 +143,10 @@
 
       <div class="config-header">
         <h6 class="border-bottom border-gray pb-2 mb-0 assistDevPageTitle">基础推拉流</h6>
-        <button id="configToggle" class="config-toggle">配置参数</button>
+        <div style="display: flex; gap: 10px;">
+          <button id="importConfigToggle" class="config-toggle" style="background-color: #28a745;">导入配置</button>
+          <button id="configToggle" class="config-toggle">配置参数</button>
+        </div>
       </div>
 
       <div class="row" style="margin-top:1%">
@@ -197,12 +200,35 @@
 
   </div>
 
+  <!-- 导入配置弹窗 -->
+  <div id="importConfigModal" class="config-modal">
+    <div class="config-modal-content">
+      <div class="header-row">
+        <h3>导入配置</h3>
+        <span class="close-btn" id="closeImportModal">&times;</span>
+      </div>
+      
+      <div class="form-group">
+        <label for="jsonConfigInput"><strong>JSON配置</strong></label>
+        <textarea class="form-control" id="jsonConfigInput" placeholder="请粘贴JSON配置内容" style="min-height: 300px;"></textarea>
+        <small class="form-text text-muted">请输入符合格式要求的JSON字符串，将自动提取所需配置项</small>
+      </div>
+      
+      <div id="importStatus" style="display: none; margin-bottom: 15px; padding: 10px; border-radius: 4px;"></div>
+      
+      <div style="text-align: right; margin-top: 20px;">
+        <button type="button" id="cancelImport" class="btn btn-secondary">取消</button>
+        <button type="button" id="confirmImport" class="btn btn-primary" style="margin-left: 10px;">确认导入</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 配置参数弹窗 -->
   <div id="configModal" class="config-modal">
     <div class="config-modal-content">
       <div class="header-row">
         <h3>配置参数</h3>
-        <span class="close-btn">&times;</span>
+        <span class="close-btn" id="closeConfigModal">&times;</span>
       </div>
       <div id="saveStatus" class="save-status" style="display: none;">已保存</div>
       
@@ -264,11 +290,12 @@
             document.getElementById('configModal').style.display = 'none';
         }
         
-        // 简单的弹窗控制
+        // 导入配置弹窗控制和功能
         document.addEventListener('DOMContentLoaded', function() {
+            // 配置弹窗控制
             const configModal = document.getElementById('configModal');
             const configToggle = document.getElementById('configToggle');
-            const closeBtn = document.querySelector('.close-btn');
+            const closeBtn = document.getElementById('closeConfigModal');
             const closeConfig = document.getElementById('closeConfig');
             
             configToggle.addEventListener('click', () => {
@@ -282,6 +309,72 @@
             window.addEventListener('click', (event) => {
                 if (event.target === configModal) {
                     hideConfigModal();
+                }
+            });
+            
+            // 导入配置弹窗控制
+            const importConfigModal = document.getElementById('importConfigModal');
+            const importConfigToggle = document.getElementById('importConfigToggle');
+            const closeImportModal = document.getElementById('closeImportModal');
+            const cancelImport = document.getElementById('cancelImport');
+            const confirmImport = document.getElementById('confirmImport');
+            const jsonConfigInput = document.getElementById('jsonConfigInput');
+            const importStatus = document.getElementById('importStatus');
+            
+            function showImportModal() {
+                importConfigModal.style.display = 'block';
+                importStatus.style.display = 'none';
+                jsonConfigInput.value = '';
+            }
+            
+            function hideImportModal() {
+                importConfigModal.style.display = 'none';
+            }
+            
+            function showImportStatus(message, isError = false) {
+                importStatus.textContent = message;
+                importStatus.className = isError ? 'alert alert-danger' : 'alert alert-success';
+                importStatus.style.display = 'block';
+            }
+            
+            importConfigToggle.addEventListener('click', showImportModal);
+            closeImportModal.addEventListener('click', hideImportModal);
+            cancelImport.addEventListener('click', hideImportModal);
+            
+            // 点击弹窗外部关闭
+            window.addEventListener('click', (event) => {
+                if (event.target === importConfigModal) {
+                    hideImportModal();
+                }
+            });
+            
+            // 确认导入配置
+            confirmImport.addEventListener('click', async () => {
+                try {
+                    const jsonStr = jsonConfigInput.value.trim();
+                    if (!jsonStr) {
+                        showImportStatus('请输入JSON配置内容', true);
+                        return;
+                    }
+                    
+                    // 调用导入配置功能
+                    const success = await window.importConfigFromJson(jsonStr);
+                    
+                    if (success) {
+                        showImportStatus('配置导入成功');
+                        // 刷新配置表单
+                        setTimeout(() => {
+                            hideImportModal();
+                            // 如果配置弹窗已打开，刷新其中的数据
+                            if (configModal.style.display === 'block') {
+                                window.refreshConfigForm();
+                            }
+                        }, 1500);
+                    } else {
+                        showImportStatus('配置导入失败，请检查JSON格式', true);
+                    }
+                } catch (error) {
+                    showImportStatus('处理配置时发生错误: ' + error.message, true);
                 }
             });
         });
