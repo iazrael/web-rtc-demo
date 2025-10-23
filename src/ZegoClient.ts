@@ -90,6 +90,7 @@ export interface ZegoClientOptions {
   secret: string;
   tokenUrl: string;
   userId: string;
+  userName?: string;
   roomId: string;
   streamId: string;
   effectiveTime: number;
@@ -124,7 +125,8 @@ export class ZegoClient {
     this.secret = options.secret;
     this.tokenUrl = options.tokenUrl;
     this.userID = options.userId;
-    this.userName = options.userId;
+    // 优先使用options中的userName，如果没有则默认使用userId
+    this.userName = options.userName || options.userId;
     this.publishStreamId = options.streamId;
     if (options.effectiveTime) {
       this.effectiveTimeInSeconds = options.effectiveTime || 3600;

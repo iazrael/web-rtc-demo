@@ -11,6 +11,7 @@ export interface AppConfig {
   appId?: string;
   secret?: string;
   userId?: string;
+  userName?: string;
   roomId?: string;
   streamId?: string;
   effectiveTime?: string;
@@ -20,7 +21,7 @@ export interface AppConfig {
 class ConfigManager {
   // 配置项名称
   private static readonly CONFIG_FIELDS = [
-    'configAppId', 'configSecret', 'configUserId', 'configRoomId', 
+    'configAppId', 'configSecret', 'configUserId', 'configUserName', 'configRoomId', 
     'configStreamId', 'configEffectiveTime', 'configPayload'
   ];
 
@@ -40,6 +41,7 @@ class ConfigManager {
       config.appId = getItem('configAppId');
       config.secret = getItem('configSecret');
       config.userId = getItem('configUserId');
+      config.userName = getItem('configUserName');
       config.roomId = getItem('configRoomId');
       config.streamId = getItem('configStreamId');
       config.effectiveTime = getItem('configEffectiveTime');
@@ -65,6 +67,9 @@ class ConfigManager {
       }
       if (config.userId !== undefined) {
         localStorage.setItem('configUserId', config.userId);
+      }
+      if (config.userName !== undefined) {
+        localStorage.setItem('configUserName', config.userName);
       }
       if (config.roomId !== undefined) {
         localStorage.setItem('configRoomId', config.roomId);
@@ -133,8 +138,10 @@ class ConfigManager {
    */
   static generateDefaultConfig(): AppConfig {
     const timestamp = new Date().getTime();
+    const userId = `sample${timestamp}`;
     return {
-      userId: `sample${timestamp}`,
+      userId: userId,
+      // 默认不设置userName，让它在实际使用时自动回退到userId
       roomId: '0001',
       streamId: `web-${timestamp}`,
       effectiveTime: '3600',
@@ -175,6 +182,7 @@ class ConfigManager {
         'appid': 'appId',
         'secret': 'secret',
         'userid': 'userId',
+        'username': 'userName',
         'roomid': 'roomId',
         'streamid': 'streamId',
         'effectivetime': 'effectiveTime',
@@ -235,6 +243,7 @@ class ConfigManager {
         setFormValue('configAppId', config.appId);
         setFormValue('configSecret', config.secret);
         setFormValue('configUserId', config.userId);
+        setFormValue('configUserName', config.userName);
         setFormValue('configRoomId', config.roomId);
         setFormValue('configStreamId', config.streamId);
         setFormValue('configEffectiveTime', config.effectiveTime || '3600');

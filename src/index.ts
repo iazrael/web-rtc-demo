@@ -127,7 +127,7 @@ function registerEventListeners(): void {
       const appID = Number(currentId);
       const roomId = config.roomId || '';
       const userID = config.userId || '';
-      const userName = config.userId || 'sampleUser' + new Date().getTime();
+      const userName =config.userName || userID;
 
       // 重新初始化SDK如果appID有变化
       if (!zegoClient || zegoClient.getUserInfo().userID !== userID) {
@@ -143,6 +143,7 @@ function registerEventListeners(): void {
           tokenUrl,
           secret: config.secret || '',
           userId: userID,
+          userName,
           roomId,
           streamId: config.streamId || '',
           effectiveTime: parseInt(config.effectiveTime || '3600', 10),
@@ -236,6 +237,7 @@ $(document).on('click', '#applyConfig', () => {
     appId: (document.getElementById('configAppId') as HTMLInputElement)?.value || '',
     secret: (document.getElementById('configSecret') as HTMLInputElement)?.value || '',
     userId: (document.getElementById('configUserId') as HTMLInputElement)?.value || '',
+    userName: (document.getElementById('configUserName') as HTMLInputElement)?.value || '',
     roomId: (document.getElementById('configRoomId') as HTMLInputElement)?.value || '',
     streamId: (document.getElementById('configStreamId') as HTMLInputElement)?.value || '',
     effectiveTime: (document.getElementById('configEffectiveTime') as HTMLInputElement)?.value || '',
@@ -276,6 +278,7 @@ if (configForm) {
         appId: (document.getElementById('configAppId') as HTMLInputElement)?.value || '',
         secret: (document.getElementById('configSecret') as HTMLInputElement)?.value || '',
         userId: (document.getElementById('configUserId') as HTMLInputElement)?.value || '',
+        userName: (document.getElementById('configUserName') as HTMLInputElement)?.value || '',
         roomId: (document.getElementById('configRoomId') as HTMLInputElement)?.value || '',
         streamId: (document.getElementById('configStreamId') as HTMLInputElement)?.value || '',
         effectiveTime: (document.getElementById('configEffectiveTime') as HTMLInputElement)?.value || '',
@@ -294,6 +297,7 @@ if (configToggle) {
     if (config.appId) (document.getElementById('configAppId') as HTMLInputElement).value = config.appId;
     if (config.secret) (document.getElementById('configSecret') as HTMLInputElement).value = config.secret;
     if (config.userId) (document.getElementById('configUserId') as HTMLInputElement).value = config.userId;
+    if (config.userName) (document.getElementById('configUserName') as HTMLInputElement).value = config.userName;
     if (config.roomId) (document.getElementById('configRoomId') as HTMLInputElement).value = config.roomId;
     if (config.streamId) (document.getElementById('configStreamId') as HTMLInputElement).value = config.streamId;
     if (config.effectiveTime) (document.getElementById('configEffectiveTime') as HTMLInputElement).value = config.effectiveTime;
