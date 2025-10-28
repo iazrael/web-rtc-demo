@@ -157,8 +157,13 @@
       cursor: pointer;
       display: none;
     }
+    #toggleMicrophone.disabled{
+      background-color: #6c757d;
+      border-color: #8b9196;
+      cursor: not-allowed;
+    }
   </style>
-  <title class="assistDevPageTitle">推拉流基础功能</title>
+  <title class="assistDevPageTitle">RTC 推拉流基础功能</title>
 </head>
 
 <body class="bg-f2">
@@ -202,6 +207,9 @@
         <div class="col-sm">
           <button type="button" id="openRoom" class="btn btn-primary btn-sm ">Login Room</button>
           <button type="button" id="publish" class="btn btn-primary btn-sm ">Start Publishing</button>
+          <button type="button" id="toggleMicrophone" class="btn btn-info btn-sm">
+            <i class="fa fa-microphone"></i> 麦克风
+          </button>
         </div>
       </div>
       <div class="row" style="margin-top: 6px">

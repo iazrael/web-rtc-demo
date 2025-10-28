@@ -113,6 +113,7 @@ export class ZegoClient {
   private previewVideo: HTMLVideoElement | null = null;
   private localStream: MediaStream | null = null;
   private isPreviewed = false;
+  private isMicrophoneMuted = false;
   private useLocalStreamList: ZegoStreamList[] = [];
   private roomList: string[] = [];
   private l3?: boolean;
@@ -700,9 +701,35 @@ export class ZegoClient {
   toggleMicrophone(): void {
     if (!this.zg || !this.previewVideo?.srcObject) return;
 
-    const disabled = $('#toggleSpeaker').hasClass('disabled');
-    this.zg.mutePublishStreamAudio(this.previewVideo.srcObject as MediaStream, !disabled);
-    $('#toggleSpeaker').toggleClass('disabled');
+    // 切换麦克风静音状态
+    this.isMicrophoneMuted = !this.isMicrophoneMuted;
+    
+    try {
+      // 静音/取消静音发布的音频流
+      this.zg.mutePublishStreamAudio(this.previewVideo.srcObject as MediaStream, this.isMicrophoneMuted);
+      
+      // 更新UI状态
+      const toggleMicBtn = document.getElementById('toggleMicrophone');
+      if (toggleMicBtn) {
+        toggleMicBtn.classList.toggle('disabled', this.isMicrophoneMuted);
+        
+        // 更新图标
+        const icon = toggleMicBtn.querySelector('i');
+        if (icon) {
+          icon.className = this.isMicrophoneMuted ? 'fa fa-microphone-slash' : 'fa fa-microphone';
+        }
+      }
+      
+      // 添加消息通知
+      this.messageViewModel.addMessage(
+        `麦克风已${this.isMicrophoneMuted ? '关闭' : '开启'}`,
+        true
+      );
+    } catch (error) {
+      console.error('切换麦克风状态失败:', error);
+      // 恢复状态
+      this.isMicrophoneMuted = !this.isMicrophoneMuted;
+    }
   }
 
   /**

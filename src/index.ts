@@ -91,6 +91,13 @@ function registerEventListeners(): void {
       zegoClient.stopPublish();
     }
   });
+  
+  // 麦克风切换按钮点击事件
+  $('#toggleMicrophone').click(() => {
+    if (zegoClient) {
+      zegoClient.toggleMicrophone();
+    }
+  });
 
   // 退出房间按钮点击事件
   $('#leaveRoom').click(async () => {
