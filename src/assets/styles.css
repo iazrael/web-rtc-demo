@@ -12,11 +12,6 @@
    padding: 0 15px;
  }
 
- #previewLabel {
-   display: block;
-   position: absolute;
- }
-
  .remoteVideo video {
    width: 160px;
    height: 160px;
@@ -166,6 +161,6 @@
    background-size: contain;
  }
 
- .disabled .fa-microphone {
+ #toggleMicrophone .fa-microphone-slash {
    background-image: url('./images/mute_mic.png');
  }

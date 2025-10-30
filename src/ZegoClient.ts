@@ -28,7 +28,7 @@ export class MessageViewModel {
   addMessage(content: string, showTimestamp: boolean = true, cmd?: string, seqId?: string | number, round?: string | number, data?: any): void {
     const now = new Date();
     const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-    
+
     const message: MessageModel = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp,
@@ -39,7 +39,7 @@ export class MessageViewModel {
       round,
       data
     };
-    
+
     this.messages.push(message);
     this.notifyObservers();
   }
@@ -55,7 +55,7 @@ export class MessageViewModel {
     if (!this.filterKeyword) {
       return this.messages;
     }
-    
+
     return this.messages.filter(message => {
       const searchContent = `${message.content} ${message.cmd || ''} ${message.seqId || ''} ${message.round || ''} ${JSON.stringify(message.data || '')}`.toLowerCase();
       return searchContent.includes(this.filterKeyword);
@@ -329,25 +329,16 @@ export class ZegoClient {
       });
     });
 
+    this.zg.setSoundLevelDelegate(true, 800);
+
     this.zg.on("IMRecvCustomCommand", (roomID: string, fromUser: ZegoUser, command: string) => {
       try {
         // 解析消息
-        const recvMsg = JSON.parse(command);
-        const { cmd, seq_id, round, data } = recvMsg;
+        let recvMsg = JSON.parse(command);
         console.log('recvMsg', recvMsg);
-        
-        // 添加消息到视图模型
-        const messageContent = `命令: ${cmd}, 序列号: ${seq_id || '-'}, 轮次: ${round || '-'}`;
-        this.messageViewModel.addMessage(messageContent, true, cmd, seq_id, round);
-        
-        if (data) {
-          try {
-            const dataStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-            this.messageViewModel.addMessage(`Data: ${dataStr}`, false, cmd, seq_id, round, data);
-          } catch (error) {
-            this.messageViewModel.addMessage(`数据内容解析失败: ${String(data)}`, false, cmd, seq_id, round);
-          }
-        }
+        // 把 object 的key都转成小写, 只要第一级就行
+        recvMsg = this.toLowerCaseKeys(recvMsg);
+        this.appendMessage(recvMsg);
       } catch (error) {
         console.error("解析消息失败:", error);
       }
@@ -360,33 +351,57 @@ export class ZegoClient {
       if (method === "onRecvRoomChannelMessage") {
         try {
           // 解析消息
-          const recvMsg = JSON.parse(content.msgContent);
-          const { Cmd, SeqId, Data, Round } = recvMsg;
+          let recvMsg = JSON.parse(content.msgContent);
           console.log('recvMsg', recvMsg);
-
-          // 添加消息到视图模型
-          const messageContent = `命令: ${Cmd}, 序列号: ${SeqId || '-'}, 轮次: ${Round || '-'}`;
-          this.messageViewModel.addMessage(messageContent, true, Cmd, SeqId, Round);
-          
-          if (Data) {
-            try {
-              const dataStr = typeof Data === 'string' ? Data : JSON.stringify(Data, null, 2);
-              this.messageViewModel.addMessage(`Data: ${dataStr}`, false, Cmd, SeqId, Round, Data);
-            } catch (error) {
-              this.messageViewModel.addMessage(`数据内容解析失败: ${String(Data)}`, false, Cmd, SeqId, Round);
-            }
-          }
+          // 把 object 的key都转成小写, 只要第一级就行
+          recvMsg = this.toLowerCaseKeys(recvMsg);
+          this.appendMessage(recvMsg);
         } catch (error) {
           console.error("解析消息失败:", error);
         }
       }
     });
-    
+
     // 启用 onRecvRoomChannelMessage 实验性 API
     this.zg.callExperimentalAPI({ method: "onRecvRoomChannelMessage", params: {} });
-    
+
     // 初始化消息视图
     this.initializeMessageView();
+  }
+
+  // 把 object 的key都转成小写, 只要第一级就行
+  private toLowerCaseKeys(obj: any): any {
+    if (typeof obj !== 'object' || obj === null) {
+      return obj;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(this.toLowerCaseKeys.bind(this));
+    }
+    const result: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        result[key.toLowerCase()] = this.toLowerCaseKeys(obj[key]);
+      }
+    }
+    return result;
+  }
+
+  private appendMessage(recvMsg: any) {
+    const { cmd, seq_id, round, data } = recvMsg;
+    console.log('recvMsg', recvMsg);
+
+    // 添加消息到视图模型
+    const messageContent = `命令: ${cmd}, 序列号: ${seq_id || '-'}, 轮次: ${round || '-'}`;
+    this.messageViewModel.addMessage(messageContent, true, cmd, seq_id, round);
+
+    if (data) {
+      try {
+        const dataStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        this.messageViewModel.addMessage(`Data: ${dataStr}`, false, cmd, seq_id, round, data);
+      } catch (error) {
+        this.messageViewModel.addMessage(`数据内容解析失败: ${String(data)}`, false, cmd, seq_id, round);
+      }
+    }
   }
 
   /**
@@ -703,23 +718,23 @@ export class ZegoClient {
 
     // 切换麦克风静音状态
     this.isMicrophoneMuted = !this.isMicrophoneMuted;
-    
+
     try {
       // 静音/取消静音发布的音频流
       this.zg.mutePublishStreamAudio(this.previewVideo.srcObject as MediaStream, this.isMicrophoneMuted);
-      
+
       // 更新UI状态
       const toggleMicBtn = document.getElementById('toggleMicrophone');
       if (toggleMicBtn) {
         toggleMicBtn.classList.toggle('disabled', this.isMicrophoneMuted);
-        
+
         // 更新图标
         const icon = toggleMicBtn.querySelector('i');
         if (icon) {
           icon.className = this.isMicrophoneMuted ? 'fa fa-microphone-slash' : 'fa fa-microphone';
         }
       }
-      
+
       // 添加消息通知
       this.messageViewModel.addMessage(
         `麦克风已${this.isMicrophoneMuted ? '关闭' : '开启'}`,
