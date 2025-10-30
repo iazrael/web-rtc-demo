@@ -4,6 +4,7 @@ import ConfigManager, { AppConfig } from './assets/ConfigManager';
 import $ from 'jquery';
 import './assets/bootstrap.min';
 import './assets/bootstrap.min.css';
+import './assets/styles.css';
 
 // // 初始化VConsole
 const debug = false;

@@ -1,0 +1,171 @@
+ .bg-f2 {
+   background-color: #f8f9fa;
+ }
+
+ video {
+   width: 320px;
+   height: auto;
+ }
+
+ .videoRow {
+   margin-top: 30px;
+   padding: 0 15px;
+ }
+
+ #previewLabel {
+   display: block;
+   position: absolute;
+ }
+
+ .remoteVideo video {
+   width: 160px;
+   height: 160px;
+ }
+
+ button.btn {
+   width: 160px;
+ }
+
+ /* 配置参数弹窗样式 */
+ .config-modal {
+   display: none;
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.5);
+   z-index: 1000;
+   overflow-y: auto;
+ }
+
+ .config-modal-content {
+   background-color: white;
+   margin: 10% auto;
+   padding: 20px;
+   border-radius: 8px;
+   width: 90%;
+   max-width: 600px;
+   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+   animation: slideDown 0.3s ease-out;
+ }
+
+ @keyframes slideDown {
+   from {
+     opacity: 0;
+     transform: translateY(-20px);
+   }
+
+   to {
+     opacity: 1;
+     transform: translateY(0);
+   }
+ }
+
+ .close-btn {
+   color: #aaa;
+   float: right;
+   font-size: 28px;
+   font-weight: bold;
+   cursor: pointer;
+ }
+
+ .close-btn:hover,
+ .close-btn:focus {
+   color: black;
+   text-decoration: none;
+ }
+
+ .header-row {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   margin-bottom: 20px;
+ }
+
+ .save-status {
+   font-size: 12px;
+   color: #28a745;
+   margin-left: 10px;
+ }
+
+ .form-group {
+   margin-bottom: 15px;
+ }
+
+ .form-control {
+   margin-top: 5px;
+ }
+
+ .form-row {
+   display: flex;
+   gap: 15px;
+   margin-bottom: 15px;
+ }
+
+ .form-row>div {
+   flex: 1;
+ }
+
+ .config-toggle {
+   background-color: #17a2b8;
+   color: white;
+   border: none;
+   padding: 8px 16px;
+   border-radius: 4px;
+   cursor: pointer;
+   font-size: 14px;
+   transition: background-color 0.3s;
+ }
+
+ .config-toggle:hover {
+   background-color: #138496;
+ }
+
+ .config-header {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+ }
+
+ textarea.form-control {
+   resize: vertical;
+   min-height: 80px;
+ }
+
+ .message-filter-container {
+   padding: 5px 0;
+ }
+
+ .clear-filter-btn {
+   font-size: 20px;
+   position: absolute;
+   right: 5px;
+   top: 50%;
+   transform: translateY(-50%);
+   background: none;
+   border: none;
+   color: #999;
+   cursor: pointer;
+   display: none;
+ }
+
+ #toggleMicrophone.disabled {
+   background-color: #6c757d;
+   border-color: #8b9196;
+   cursor: not-allowed;
+ }
+
+ /* 麦克风按钮样式 */
+ .fa-microphone {
+   width: 20px;
+   height: 20px;
+   display: inline-block;
+   vertical-align: middle;
+   background: url('./images/mic.png') no-repeat center center;
+   background-size: contain;
+ }
+
+ .disabled .fa-microphone {
+   background-image: url('./images/mute_mic.png');
+ }
