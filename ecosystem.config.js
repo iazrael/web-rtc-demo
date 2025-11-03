@@ -1,12 +1,13 @@
 module.exports = {
   apps: [
     {
-      name: 'rtc-token-server',
+      name: 'rtc-demo-server',
       script: 'dist/index.js',
       instances: 1,
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
+      cwd: '/data/azrael/workspaces/agent_web_rtc_sample/server',
       env: {
         NODE_ENV: 'production',
         HTTP_PORT: 3333,
