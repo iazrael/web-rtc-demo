@@ -60,6 +60,48 @@ app.post('/api/token', (req: Request, res: Response) => {
   }
 });
 
+
+// ASR回调接口
+app.post('/asr/callback', (req: Request, res: Response) => {
+    // 打印ASR结果
+    console.log('收到CustomNodes请求:', req.body);
+
+    const { UserId, MessageId, Text } = req.body.Data;
+
+    // 参数验证
+    if (!UserId || !MessageId || !Text) {
+        return res.status(400).json({
+            error: '缺少必要参数'
+        });
+    }
+
+    // 1. 如果文本包含你好, 就返回 AddHistory
+    // 2. 如果文本包含天气, 就返回 SendLLM
+    // 3. 如果都不包含, 就返回空
+    if (Text.includes('AddHistory')) {
+        console.log('AddHistory');
+        return res.json({
+            AddHistory: {
+                Text: "添加历史:" + Text,// 将识别文本写入对话历史
+            }
+        });
+    } else if (Text.includes('CustomNodeStop')) {
+        return res.json({});
+    } else {
+        console.log('SendLLM');
+        return res.json({
+            AddHistory: {
+                Text: "小龙没说:" + Text,// 将识别文本写入对话历史
+            },
+            SendLLM: {
+                Text: "小龙说:嘿嘿嘿, " + Text, // 将识别文本发送给LLM处理
+                SystemPrompt: '你是刘亦菲, 喜欢小龙' // 可选的系统提示
+            }
+        });
+
+    }
+});
+
 // 捕获所有其他路由，返回index.html（支持SPA路由）
 app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(staticDir, 'index.html'));

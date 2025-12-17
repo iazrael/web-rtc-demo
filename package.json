@@ -10,14 +10,11 @@
   },
   "author": "choui",
   "license": "ISC",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com:zegodev/zego-express-webrtc-sample.git"
-  },
   "dependencies": {
     "i18next": "^19.4.2",
     "jquery": "^3.4.1",
     "jquery-i18next": "^1.2.1",
+    "next": "^14.0.0",
     "popper.js": "^1.16.1",
     "vconsole": "^3.3.4",
     "zego-express-engine-webrtc": "3.9.123"
