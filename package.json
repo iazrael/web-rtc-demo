@@ -17,9 +17,7 @@
     "next": "^14.0.0",
     "popper.js": "^1.16.1",
     "vconsole": "^3.3.4",
-    "zego-express-engine-webrtc": "3.9.123"
-  },
-  "devDependencies": {
+    "zego-express-engine-webrtc": "3.9.123",
     "@types/jquery": "^3.5.33",
     "@types/node": "^24.8.1",
     "bootstrap": "^3.4.1",
@@ -33,5 +31,7 @@
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1"
+  },
+  "devDependencies": {
   }
 }
