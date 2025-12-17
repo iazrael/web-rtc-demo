@@ -4,6 +4,9 @@
   "description": "demo",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "build": "webpack",
     "dev": "webpack-dev-server",

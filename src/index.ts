@@ -1,7 +1,7 @@
 import ZegoClient from './ZegoClient';
 import ConfigManager, { AppConfig } from './assets/ConfigManager';
 // import VConsole from 'vconsole';
-import $ from 'jquery';
+import './assets/jquery-3.7.1.min';
 import './assets/bootstrap.min';
 import './assets/bootstrap.min.css';
 import './assets/styles.css';
