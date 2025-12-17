@@ -1,4 +1,3 @@
-import { NextApiRequest, NextApiResponse } from 'next';
 import { createCipheriv, randomBytes } from 'crypto';
 
 const enum ErrorCode {
@@ -126,7 +125,7 @@ export function generateToken04(
 }
 
 // Vercel API handler
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') {
         return res.status(405).json({
             code: 405,
