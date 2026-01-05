@@ -1,6 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   mode: 'development',
@@ -59,6 +60,14 @@ module.exports = {
       filename: 'index.html',
       template: './src/index.html',
       chunks: ['main']
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'src/assets/images/favicon.svg'),
+          to: path.resolve(__dirname, 'dist/images/favicon.svg')
+        }
+      ]
     })
   ],
   devServer: {
